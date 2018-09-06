@@ -61,6 +61,8 @@ void loop() {
 
   ch5 = pulseIn(8, HIGH); //飛行模式
   if ( ch5 < 1300) { //遙控模式
+    takeoff = false;
+    land = false;
     ch1 = pulseIn(12, HIGH); //roll
     ch2 = pulseIn(11, HIGH); //pitch
     ch3 = pulseIn(10, HIGH); //油門
@@ -85,7 +87,8 @@ void loop() {
     delay(100);
   }
   else if (ch5 > 1300 && ch5 < 1600) { //任務模式 /
-//    correct_error = random(3);  //    land = false;
+//    correct_error = random(3); 
+//    land = false;
     if (takeoff == false) {
       start = millis();
       takeoff = true;
@@ -116,13 +119,13 @@ void loop() {
       else {
         unsigned int us = sonar.ping();
         if (sonar.convert_cm(us) <= 100){
-          ppm[2] = 1485;//1480
+          ppm[2] = 1100;//1485
         }
         else if (sonar.convert_cm(us) >= 120){
-          ppm[2] = 1470;
+          ppm[2] = 1470;//1470
         }
         else{
-          ppm[2] = 1475;
+          ppm[2] = 1475;//1475
         }
 //        Serial.print("Ping:");
 //        Serial.println(sonar.convert_cm(us));
@@ -151,6 +154,7 @@ void loop() {
   }
   //=========================================================================================    
   else { //救機降落
+    takeoff = false;
     //    ch1 = pulseIn(12, HIGH); //roll
     //    ch2 = pulseIn(11, HIGH); //pitch
     //    ch3 = pulseIn(10, HIGH); //油門
