@@ -1,4 +1,4 @@
-
+#include <NewPing.h>
 #include <SPI.h>
 #define chanel_number 8  //set the number of chanels
 #define default_servo_value 1500  //set the default servo value
@@ -6,10 +6,17 @@
 #define PPM_PulseLen 300  //set the pulse length
 #define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
 #define sigPin 2  //set PPM signal output pin on the arduino
+#define TRIG_PIN 7
+#define ECHO_PIN 6
+#define MAX_DISTANCE 200
+
+NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
+
 unsigned long start;
 unsigned long now;
 bool takeoff = false;
 bool land = false;
+
 
 //////////////////////////////////////////////////////////////////
 double ch1;
@@ -17,10 +24,11 @@ double ch2;
 double ch3;
 double ch4;
 double ch5;
-int roll_center=1465;//1450,1460
-int pitch_center=1440;//1435前進用1442微微後退
-int yaw_center=1478;
+int roll_center = 1478; //1465,1478
+int pitch_center = 1445; //1435前進用1442微微後退
+int yaw_center = 1484;
 
+//int correct_error;
 /*this array holds the servo values for the ppm signal
   change theese values in your code (usually servo values move between 1000 and 2000)*/
 int ppm[chanel_number];
@@ -50,6 +58,7 @@ void setup() {
   //==========================================================主程式
 }
 void loop() {
+
   ch5 = pulseIn(8, HIGH); //飛行模式
   if ( ch5 < 1300) { //遙控模式
     ch1 = pulseIn(12, HIGH); //roll
@@ -76,31 +85,50 @@ void loop() {
     delay(100);
   }
   else if (ch5 > 1300 && ch5 < 1600) { //任務模式 /
-    //    land = false;
+//    correct_error = random(3);  //    land = false;
     if (takeoff == false) {
       start = millis();
       takeoff = true;
     }
     else {
       now = millis();
-      if (now - start < 2000) {
+      if (now - start <= 2000) {
         ppm[0] = roll_center;//1500,1460
         ppm[1] = pitch_center;//1435,1450
-        ppm[2] = 1495;
+        ppm[2] = 1470;
         ppm[3] = yaw_center;//1500
         ppm[4] = ch5;
       }
-//      else if (2000 < now - start < 4000) {
+//      else if (now - start <= 2000) {
 //        ppm[0] = roll_center;//1500,1525
 //        ppm[1] = pitch_center;//1500,1455,1460
-//        ppm[2] = 1550;
+//        ppm[2] = 1450;
+//        ppm[3] = yaw_center;//1500
+//        ppm[4] = ch5;
+//      }
+//      else if (now - start <= 3000) {
+//        ppm[0] = roll_center;//1500,1525
+//        ppm[1] = pitch_center;//1500,1455,1460
+//        ppm[2] = 1475;
 //        ppm[3] = yaw_center;//1500
 //        ppm[4] = ch5;
 //      }
       else {
+        unsigned int us = sonar.ping();
+        if (sonar.convert_cm(us) <= 100){
+          ppm[2] = 1485;//1480
+        }
+        else if (sonar.convert_cm(us) >= 120){
+          ppm[2] = 1470;
+        }
+        else{
+          ppm[2] = 1475;
+        }
+//        Serial.print("Ping:");
+//        Serial.println(sonar.convert_cm(us));
         ppm[0] = roll_center;//x,1460
         ppm[1] = pitch_center;//1425,1460
-        ppm[2] = 1495;
+        
         ppm[3] = yaw_center;//1500
         ppm[4] = ch5;
       }
@@ -137,14 +165,14 @@ void loop() {
       if (now - start <= 2000) {
         ppm[0] = roll_center;
         ppm[1] = pitch_center;
-        ppm[2] = 1475;//1450
+        ppm[2] = 1465;//1450
         ppm[3] = yaw_center;
         ppm[4] = 1800;
       }
       else if ( now - start <= 3000 ) {
         ppm[0] = roll_center;
         ppm[1] = pitch_center;
-        ppm[2] = 1465;//1250
+        ppm[2] = 1460;//1250
         ppm[3] = yaw_center;
         ppm[4] = 1800;
       }
@@ -204,4 +232,3 @@ ISR(TIMER1_COMPA_vect) {
     }
   }
 }
-
