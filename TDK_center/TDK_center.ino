@@ -96,9 +96,9 @@ void loop() {
     else {
       now = millis();
       if (now - start <= 2000) {
-        ppm[0] = roll_center;//1500,1460
-        ppm[1] = pitch_center;//1435,1450
-        ppm[2] = 1470;
+        ppm[0] = 1458;//1500,1460
+        ppm[1] = 1465;//1435,1450
+        ppm[2] = 1465;
         ppm[3] = yaw_center;//1500
         ppm[4] = ch5;
       }
@@ -119,10 +119,10 @@ void loop() {
       else {
         unsigned int us = sonar.ping();
         if (sonar.convert_cm(us) <= 100){
-          ppm[2] = 1100;//1485
+          ppm[2] = 1485;//1485
         }
         else if (sonar.convert_cm(us) >= 120){
-          ppm[2] = 1470;//1470
+          ppm[2] = 1465;//1470
         }
         else{
           ppm[2] = 1475;//1475
