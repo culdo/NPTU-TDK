@@ -25,7 +25,7 @@ double ch3;
 double ch4;
 double ch5;
 int roll_center = 1478; //1465,1478
-int pitch_center = 1445; //1435前進用1442微微後退
+int pitch_center = 1450; //1435前進用center  1445
 int yaw_center = 1484;
 
 //int correct_error;
@@ -96,8 +96,8 @@ void loop() {
     else {
       now = millis();
       if (now - start <= 2000) {
-        ppm[0] = 1458;//1500,1460
-        ppm[1] = 1465;//1435,1450
+        ppm[0] = 1456;//1500,1458
+        ppm[1] = 1460;//1435,1450
         ppm[2] = 1465;
         ppm[3] = yaw_center;//1500
         ppm[4] = ch5;
@@ -122,7 +122,7 @@ void loop() {
           ppm[2] = 1485;//1485
         }
         else if (sonar.convert_cm(us) >= 120){
-          ppm[2] = 1465;//1470
+          ppm[2] = 1470;//1470
         }
         else{
           ppm[2] = 1475;//1475
