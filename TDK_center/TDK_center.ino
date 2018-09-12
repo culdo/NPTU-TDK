@@ -9,32 +9,40 @@
 #define TRIG_PIN 7
 #define ECHO_PIN 6
 #define MAX_DISTANCE 200
+#define roll_center 1460  //1465,1478
+#define pitch_center 1445  //1435前進用1442微微後退
+#define yaw_center 1484
+
+//#define debug false
 
 NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
 
-unsigned long start;
-unsigned long now;
-bool takeoff = false;
-bool land = false;
-
+unsigned long now, timer, before;
+unsigned long start = 0;
+bool is_takeoff = false;
+bool is_land = false;
+bool is_sonic_fly = false;
+//bool switched = false;
 
 //////////////////////////////////////////////////////////////////
-double ch1;
-double ch2;
-double ch3;
-double ch4;
-double ch5;
-int roll_center = 1478; //1465,1478
-int pitch_center = 1450; //1435前進用center  1445
-int yaw_center = 1484;
-
-//int correct_error;
+int ch5;
 /*this array holds the servo values for the ppm signal
   change theese values in your code (usually servo values move between 1000 and 2000)*/
 int ppm[chanel_number];
+int ppm_value;
+int updated_times = 0;
+int sonar_cm;
+//openmv
+char cmd[4];
+char garbage[4];
+int openmv;
+
 void setup() {
   //initiallize default ppm values
-  Serial.begin(9600);
+  //  if(debug == true) {
+  // 設為115200平滑接收監控訊息
+  Serial.begin(115200);
+  //  }
   for (int i = 0; i < chanel_number; i++) {
     ppm[i] = default_servo_value;
   }
@@ -55,156 +63,211 @@ void setup() {
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
 
+  timer = millis();
   //==========================================================主程式
 }
+
 void loop() {
-
+  //  int down_cm;
+  //  Serial.println(sonar.ping_cm());
+//    debug();
   ch5 = pulseIn(8, HIGH); //飛行模式
+  ppm[4] = ch5; //mode
   if ( ch5 < 1300) { //遙控模式
-    takeoff = false;
-    land = false;
-    ch1 = pulseIn(12, HIGH); //roll
-    ch2 = pulseIn(11, HIGH); //pitch
-    ch3 = pulseIn(10, HIGH); //油門
-    ch4 = pulseIn(9, HIGH); //YAW
-    ch5 = pulseIn(8, HIGH); //mode
-    Serial.print("roll:");
-    Serial.println(ch1);
-    Serial.print("pitch:");
-    Serial.println(ch2);
-    Serial.print("throttle:");
-    Serial.println(ch3);
-    Serial.print("yaw:");
-    Serial.println(ch4);
-    Serial.print("mode:");
-    Serial.println(ch5);
-    Serial.println();
-    ppm[0] = ch1;
-    ppm[1] = ch2;
-    ppm[2] = ch3;
-    ppm[3] = ch4;
-    ppm[4] = ch5;
-    delay(100);
+    rc_mode();
   }
-  else if (ch5 > 1300 && ch5 < 1600) { //任務模式 /
-//    correct_error = random(3); 
-//    land = false;
-    if (takeoff == false) {
-      start = millis();
-      takeoff = true;
-    }
-    else {
-      now = millis();
-      if (now - start <= 2000) {
-        ppm[0] = 1456;//1500,1458
-        ppm[1] = 1460;//1435,1450
-        ppm[2] = 1465;
-        ppm[3] = yaw_center;//1500
-        ppm[4] = ch5;
-      }
-//      else if (now - start <= 2000) {
-//        ppm[0] = roll_center;//1500,1525
-//        ppm[1] = pitch_center;//1500,1455,1460
-//        ppm[2] = 1450;
-//        ppm[3] = yaw_center;//1500
-//        ppm[4] = ch5;
-//      }
-//      else if (now - start <= 3000) {
-//        ppm[0] = roll_center;//1500,1525
-//        ppm[1] = pitch_center;//1500,1455,1460
-//        ppm[2] = 1475;
-//        ppm[3] = yaw_center;//1500
-//        ppm[4] = ch5;
-//      }
-      else {
-        unsigned int us = sonar.ping();
-        if (sonar.convert_cm(us) <= 100){
-          ppm[2] = 1485;//1485
-        }
-        else if (sonar.convert_cm(us) >= 120){
-          ppm[2] = 1470;//1470
-        }
-        else{
-          ppm[2] = 1475;//1475
-        }
-//        Serial.print("Ping:");
-//        Serial.println(sonar.convert_cm(us));
-        ppm[0] = roll_center;//x,1460
-        ppm[1] = pitch_center;//1425,1460
-        
-        ppm[3] = yaw_center;//1500
-        ppm[4] = ch5;
-      }
-    }
-    //    Serial.print("start:");
-    //    Serial.println(start);
-    //    Serial.print("now:");
-    //    Serial.println(now);
-    //    Serial.print("油門:");
-    //    Serial.println(ppm[2]);
-    //    ppm[0] = 1500;
-    //    ppm[1] = 1500;
-    //    ppm[2] = 1300;
-    //    ppm[3] = 1500;
-    //    ppm[4] = ch5;
-    //    Serial.println(ch5);
-    //    Serial.println();
-    delay(100);
-
+  else if (ch5 >= 1300 && ch5 < 1600) { //任務模式
+    mission_mode();
   }
-  //=========================================================================================    
   else { //救機降落
-    takeoff = false;
-    //    ch1 = pulseIn(12, HIGH); //roll
-    //    ch2 = pulseIn(11, HIGH); //pitch
-    //    ch3 = pulseIn(10, HIGH); //油門
-    //    ch4 = pulseIn(9, HIGH); //YAW
-    //    ch5 = pulseIn(8, HIGH); //mode
-    if (land == false) {
+    land_mode();
+  }
+
+  //  if(ppm[2]>=1500) { //緊急停止
+  //    is_takeoff_mode()
+  //  }
+  //  註解下行允許接收openmv
+  //    delay(100);
+}
+
+void rc_mode(void ) {
+  is_takeoff = false;
+  is_land = false;
+  is_sonic_fly = false;
+  if (millis() - start > 1000) {
+    if (pulseIn(9, HIGH) > 1900  ) {
       start = millis();
-      land = true;
+      ppm[3] = 1910;
+    } else {
+      ppm[3] = pulseIn(9, HIGH); //mode
+    }
+  }
+
+
+  ppm[0] = pulseIn(12, HIGH); //roll
+  ppm[1] = pulseIn(11, HIGH); //pitch
+  ppm[2] = pulseIn(10, HIGH); //油門
+  //  ppm[3] = pulseIn(9, HIGH); //YAW
+  ppm[4] = pulseIn(8, HIGH); //mode
+}
+
+void mission_mode(void ) {
+  is_land = false;
+  if (is_takeoff == false) {
+    start = millis();
+    is_takeoff = true;
+    ppm_value = 1440;
+    
+  }
+  else {
+    now = millis();
+    if (now - start <= 15000) {
+      ppm[0] = roll_center;//1500,1460
+      ppm[1] = pitch_center;//1435,1450
+      ppm[2] = 1427; //1465
+      ppm[3] = yaw_center;//1500
     }
     else {
       now = millis();
-      if (now - start <= 2000) {
-        ppm[0] = roll_center;
-        ppm[1] = pitch_center;
-        ppm[2] = 1465;//1450
-        ppm[3] = yaw_center;
-        ppm[4] = 1800;
+      if (now - before >= 1000) {
+        sonar_cm = sonar.ping_cm();
+        before = millis();
       }
-      else if ( now - start <= 3000 ) {
-        ppm[0] = roll_center;
-        ppm[1] = pitch_center;
-        ppm[2] = 1460;//1250
-        ppm[3] = yaw_center;
-        ppm[4] = 1800;
+      ppm[2] = ppm_value; //1440
+
+      if (is_sonic_fly == false) {
+        if ((sonar_cm < 75) && ((now - timer) >= 3000)) {
+          timer = millis();
+          ppm_value += 5;
+        } else if (sonar_cm >= 75) {
+          is_sonic_fly = true;
+        }
       }
-      else {
-        ppm[0] = 1470;
-        ppm[1] = 1900;
-        ppm[2] = 1000;
-        ppm[3] = 1000;
-        ppm[4] = 1800;
+      //      else {
+      //       openmv
+      //      if (Serial.available() > 0) {
+      //        if (Serial.read() == '\n') {
+      //          Serial.readBytes(cmd, 4);
+      //        }
+      //        //        }
+      //        //        Serial.readBytes(garbage, 10);
+      //        ppm[3] = atoi(cmd);
+      //      }
+    }
+  }
+}
+
+void land_mode(void ) {
+  is_sonic_fly = false;
+  is_takeoff = false;
+
+  if (is_land == false) {
+    ppm[0] = roll_center;
+    ppm[1] = pitch_center;
+    ppm[2] = 1475;//1450
+    ppm[3] = yaw_center;
+    start = millis();
+    is_land = true;
+  }
+  else {
+    now = millis();
+    if (now - start <= 20000) {
+      if (now - before >= 2000) {
+        before = millis();
+        ppm[2] -= 5;
       }
     }
-    //    ppm[0] = 1470;
-    //    ppm[1] = 1470;
-    //    ppm[2] = 1000;
-    //    ppm[3] = 1470;
-    //    ppm[4] = 1800;
-    //    delay(100);
-    //    Serial.print("start:");
-    //    Serial.println(start);
-    //    Serial.print("now:");
-    //    Serial.println(now);
-    //    Serial.print("油門:");
-    //    Serial.println(ppm[2]);
-    //    Serial.println(ppm[3]);
-    delay(100);
+    else {
+      ppm[0] = 1470;
+      ppm[1] = 1900;
+      ppm[2] = 1000;
+      ppm[3] = 1000;
+      ppm[4] = 1800;
+    }
+    //    if (now - start <= 2000) {
+    //      ppm[0] = roll_center;
+    //      ppm[1] = pitch_center;
+    //      ppm[2] = 1460;//1450
+    //      ppm[3] = yaw_center;
+    //      ppm[4] = 1800;
+    //    }
+    //    else if ( now - start <= 3000 ) {
+    //      ppm[0] = roll_center;
+    //      ppm[1] = pitch_center;
+    //      ppm[2] = 1455;//1250
+    //      ppm[3] = yaw_center;
+    //      //        ppm[4] = 1800;
+    //    }
+    //    else if (now - start <= 4000 ) {
+    //      ppm[0] = roll_center;
+    //      ppm[1] = pitch_center;
+    //      ppm[2] = 1450;//1250
+    //      ppm[3] = yaw_center;
+    //      //        ppm[4] = 1800;
+    //    }
+    //    else {
+    //      ppm[0] = 1470;
+    //      ppm[1] = 1900;
+    //      ppm[2] = 1000;
+    //      ppm[3] = 1000;
+    //      ppm[4] = 1800;
+    //    }
+    //  }
   }
-
 }
+void debug(void) {
+  if ( ch5 < 1300) {
+    Serial.println("================Radio Mode================");
+    Serial.print("roll:");
+    Serial.println(ppm[0]);
+    Serial.print("pitch:");
+    Serial.println(ppm[1]);
+    Serial.print("throttle:");
+    Serial.println(ppm[2]);
+    Serial.print("yaw:");
+    Serial.println(ppm[3]);
+    Serial.print("mode:");
+    Serial.println(ppm[4]);
+    Serial.print("start:");
+    Serial.println(start / 1000);
+    Serial.print("now:");
+    Serial.println(now / 1000);
+  } else if (ch5 >= 1300 && ch5 < 1600) {
+    Serial.println("================Mission Mode================");
+    //    Serial.print("mode:");
+    //    Serial.println(ppm[4]);
+    Serial.print("throttle:");
+    Serial.println(ppm[2]);
+    //    if (is_sonic_fly == true) {
+    Serial.print("yaw:");
+    Serial.println(ppm[3]);
+    //    }
+    //    else {
+    Serial.print("start:");
+    Serial.println(start / 1000);
+    //    Serial.print("timer:");
+    //    Serial.println(timer / 1000);
+    Serial.print("now:");
+    Serial.println(now / 1000);
+    //    }
+    Serial.print("cm:");
+    Serial.println(sonar_cm);
+  } else {
+    Serial.println("================Save-Land Mode================");
+    Serial.print("mode:");
+    Serial.println(ppm[4]);
+    Serial.print("throttle:");
+    Serial.println(ppm[2]);
+    Serial.print("start:");
+    Serial.println(start / 1000);
+    Serial.print("before:");
+    Serial.println(before / 1000);
+    Serial.print("now:");
+    Serial.println(now / 1000);
+
+  }
+}
+
 //====================================================PPM產生
 ISR(TIMER1_COMPA_vect) {
   static boolean state = true;
@@ -236,3 +299,4 @@ ISR(TIMER1_COMPA_vect) {
     }
   }
 }
+
