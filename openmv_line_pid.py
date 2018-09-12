@@ -11,13 +11,13 @@
 # camera's field of view.
 
 import sensor, image, time, math
-from pyb import UART
+from pyb import UART,delay
 
 #initial the uart
-uart = UART(3, 9600)
-uart.init(9600, bits=8, parity=None, stop=1) # init with given parameters
+uart = UART(3, 115200)
+uart.init(115200, bits=8, parity=None, stop=1) # init with given parameters
 # Tracks a black line. Use [(128, 255)] for a tracking a white line.
-GRAYSCALE_THRESHOLD = [(0, 100)]
+GRAYSCALE_THRESHOLD = [(0, 50)]
 
 # Each roi is (x, y, w, h). The line detection algorithm will try to find the
 # centroid of the largest blob in each roi. The x position of the centroids
@@ -165,17 +165,17 @@ while(True):
   #  print(clock.fps()) # Note: Your OpenMV Cam runs about half as fast while
     # connected to your computer. The FPS should increase once disconnected.
     if (deflection_angle>53) or (deflection_angle<-53):
-        yaw=1480
-        #print("yaw speed: %d" % yaw)
-        uart.write("%d" % yaw)
+        yaw=1484
+        print("yaw speed: %d" % yaw)
+        uart.write("%d\n" % yaw)
     else:
         Error=deflection_angle
         Derivative=Error-PreErr
         Control=int(kp*Error+kd*Derivative)
-        yaw=1480-Control
+        yaw=1484-Control
         PreErr=Error
-        uart.write("%d" % yaw)
-        #print("yaw speed: %d" % yaw)
+        uart.write("%d\n" % yaw)
+        print("yaw speed: %d" % yaw)
    # uart.write(deflection_angle)
    # if deflection_angle >= 15:
    #     uart.write("L")
@@ -183,4 +183,5 @@ while(True):
    #     uart.write("R")
    # else:
    #     uart.write("S")
-     #  time.sleep(1000)
+    #time.sleep(.100)
+    delay(10) # 發送延遲magic
