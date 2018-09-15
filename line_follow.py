@@ -11,11 +11,12 @@
 # camera's field of view.
 
 import sensor, image, time, math
-from pyb import UART
+from pyb import UART,delay
+
 
 #initial the uart
-uart = UART(3, 9600)
-uart.init(9600, bits=8, parity=None, stop=1) # init with given parameters
+uart = UART(3, 115200)
+uart.init(115200, bits=8, parity=None, stop=1) # init with given parameters
 # Tracks a black line. Use [(128, 255)] for a tracking a white line.
 GRAYSCALE_THRESHOLD = [(0, 100)]
 
@@ -86,22 +87,25 @@ while(True):
     #print("Turn Angle: %f" % deflection_angle)
     if (deflection_angle>=10) and (deflection_angle<= 25):#Direction and angle setting
         yaw=1420
-        uart.write("%d" % yaw)
+
     elif  deflection_angle>25:
         yaw=1350
-        uart.write("%d" % yaw)
+
         #uart.write("B")
     elif (deflection_angle <=-10) and  (deflection_angle>=-25):
         yaw=1540
-        uart.write("%d" % yaw)
+
         #uart.write("C")
     elif deflection_angle<-25:
         yaw=1610
-        uart.write("%d" % yaw)
+
         #uart.write("D")
     else:
         yaw=1480
-        uart.write("%d" % yaw)
+
         #uart.write("S")
+    uart.write("%d\n" % yaw)
+    print("yaw=%d\nangle=%d" % (yaw, deflection_angle))
     #print(clock.fps()) # Note: Your OpenMV Cam runs about half as fast while
     # connected to your computer. The FPS should increase once disconnected.
+    delay(10)
