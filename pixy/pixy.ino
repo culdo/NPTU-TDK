@@ -30,21 +30,21 @@ Servo myservo;
 int pos = 0;
 // This is the main Pixy object
 Pixy pixy;
-
+ int j;
 void setup()
 {
   Serial.begin(9600);
-  Serial.print("Starting...\n");
+//  Serial.print("Starting...\n");
   myservo.attach(7);
   pixy.init();
 }
 
 void loop()
 {
-  static int i = 0;
-  int j;
+//  static int i = 0;
+ 
   uint16_t blocks;
-  char buf[32];
+//  char buf[32];
 
   // grab blocks!
   blocks = pixy.getBlocks();
@@ -55,24 +55,40 @@ void loop()
     if (pixy.blocks[j].signature == 1)
     {
       pos ++;
+//       Serial.println("1");
+       Serial.println(pixy.blocks[j].x);
+       Serial.println(pixy.blocks[j].y);
+       if (pixy.blocks[j].x <=140){
+         Serial.println("right");
+       }
+       else if(pixy.blocks[j].x >=180){
+         Serial.println("left");
+       }
+       if (pixy.blocks[j].y <=60){
+         Serial.println("front");
+       }
+       else if(pixy.blocks[j].y >=130){
+         Serial.println("back");
+       }
     }
     else if (pixy.blocks[j].signature == 2)
     {
       pos --;
+       Serial.println("2");
     }
-    Serial.println(pixy.blocks[j].signature);
-    if (pos >= 180) {
-      myservo.write(180);
-//      delay(10);
-    }
-    else if (pos <= 0) {
-      myservo.write(0);
-//      delay(10);
-    }
-    else {
-      myservo.write(pos);
-//      delay(10);
-    }
+//    Serial.println(pixy.blocks[j].signature);
+//    if (pos >= 180) {
+//      myservo.write(180);
+////      delay(10);
+//    }
+//    else if (pos <= 0) {
+//      myservo.write(0);
+////      delay(10);
+//    }
+//    else {
+//      myservo.write(pos);
+////      delay(10);
+//    }
   }
 
 
