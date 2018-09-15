@@ -9,8 +9,8 @@
 #define TRIG_PIN 7
 #define ECHO_PIN 6
 #define MAX_DISTANCE 200
-#define roll_center 1460  //1465,1478
-#define pitch_center 1445  //1435前進用1442微微後退
+#define roll_center 1450  //好螺旋1460
+#define pitch_center 1410  //好螺旋1445
 #define yaw_center 1484
 
 //#define debug false
@@ -68,9 +68,7 @@ void setup() {
 }
 
 void loop() {
-  //  int down_cm;
-  //  Serial.println(sonar.ping_cm());
-//    debug();
+  debug();
   ch5 = pulseIn(8, HIGH); //飛行模式
   ppm[4] = ch5; //mode
   if ( ch5 < 1300) { //遙控模式
@@ -94,8 +92,9 @@ void rc_mode(void ) {
   is_takeoff = false;
   is_land = false;
   is_sonic_fly = false;
+  // 解鎖
   if (millis() - start > 1000) {
-    if (pulseIn(9, HIGH) > 1900  ) {
+    if (pulseIn(9, HIGH) > 1900 ) {
       start = millis();
       ppm[3] = 1910;
     } else {
@@ -103,11 +102,9 @@ void rc_mode(void ) {
     }
   }
 
-
   ppm[0] = pulseIn(12, HIGH); //roll
   ppm[1] = pulseIn(11, HIGH); //pitch
   ppm[2] = pulseIn(10, HIGH); //油門
-  //  ppm[3] = pulseIn(9, HIGH); //YAW
   ppm[4] = pulseIn(8, HIGH); //mode
 }
 
@@ -116,42 +113,53 @@ void mission_mode(void ) {
   if (is_takeoff == false) {
     start = millis();
     is_takeoff = true;
-    ppm_value = 1440;
-    
+    ppm_value = 1470;
+
   }
   else {
     now = millis();
-    if (now - start <= 15000) {
+    if (now - start <= 5000) {
       ppm[0] = roll_center;//1500,1460
       ppm[1] = pitch_center;//1435,1450
-      ppm[2] = 1427; //1465
+      ppm[2] = 1420; //1465
       ppm[3] = yaw_center;//1500
     }
     else {
-      now = millis();
-      if (now - before >= 1000) {
+      if (millis() - before >= 1000) {
         sonar_cm = sonar.ping_cm();
         before = millis();
       }
       ppm[2] = ppm_value; //1440
 
       if (is_sonic_fly == false) {
-        if ((sonar_cm < 75) && ((now - timer) >= 3000)) {
+        if ((sonar_cm < 75) && ((millis() - timer) >= 1000)) {
           timer = millis();
-          ppm_value += 5;
-        } else if (sonar_cm >= 75) {
+          ppm_value += 2;
+        }
+        else if (sonar_cm >= 75) {
           is_sonic_fly = true;
         }
       }
       //      else {
-      //       openmv
-      //      if (Serial.available() > 0) {
-      //        if (Serial.read() == '\n') {
-      //          Serial.readBytes(cmd, 4);
+      //        //        openmv
+      //        if (millis() - before <= 500) {
+      //          if (Serial.available() > 0) {
+      //            if (Serial.read() == '\n') {
+      //              Serial.readBytes(cmd, 4);
+      //            }
+      //            //        }
+      //            //        Serial.readBytes(garbage, 10);
+      //            ppm[1] = pitch_center;
+      //            ppm[3] = atoi(cmd);
+      //          }
       //        }
-      //        //        }
-      //        //        Serial.readBytes(garbage, 10);
-      //        ppm[3] = atoi(cmd);
+      //        else if (millis() - before <= 1500) {
+      //          ppm[3] = yaw_center;
+      //          ppm[1] = pitch_center - 10;
+      //        }
+      //        else {
+      //          before = millis();
+      //        }
       //      }
     }
   }
@@ -164,15 +172,15 @@ void land_mode(void ) {
   if (is_land == false) {
     ppm[0] = roll_center;
     ppm[1] = pitch_center;
-    ppm[2] = 1475;//1450
+    ppm[2] = 1480;//1450
     ppm[3] = yaw_center;
     start = millis();
     is_land = true;
   }
   else {
     now = millis();
-    if (now - start <= 20000) {
-      if (now - before >= 2000) {
+    if (now - start <= 12000) {
+      if (now - before >= 2750) {
         before = millis();
         ppm[2] -= 5;
       }
@@ -241,6 +249,8 @@ void debug(void) {
     //    if (is_sonic_fly == true) {
     Serial.print("yaw:");
     Serial.println(ppm[3]);
+    Serial.print("pitch:");
+    Serial.println(ppm[1]);
     //    }
     //    else {
     Serial.print("start:");
