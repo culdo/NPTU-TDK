@@ -1,0 +1,5 @@
+{
+    "board": "arduino:avr:uno",
+    "sketch": "TDK_center\\TDK_center.ino",
+    "port": "COM5"
+}
