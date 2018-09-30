@@ -1,6 +1,5 @@
 #include <NewPing.h>
 #include <SPI.h>
-#include <Pixy.h>
 #define chanel_number 8  //set the number of chanels
 #define default_servo_value 1500  //set the default servo value
 #define PPM_FrLen 22500  //set the PPM frame length in microseconds (1ms = 1000µs)
@@ -13,16 +12,25 @@
 #define roll_center 1445  //好螺旋1460
 #define pitch_center 1420  //好螺旋1445
 #define yaw_center 1484
+#include <SoftwareSerial.h>   // 引用程式庫
+#include <Pixy.h>
+
+// 定義連接藍牙模組的序列埠
+SoftwareSerial BT(3, 4); // 接收腳, 傳送腳
+char val;  // 儲存接收資料的變數
 
 //#define debug false
-Pixy pixy;
+
 NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
+// This is the main Pixy object
+Pixy pixy;
 
 unsigned long now, timer, before;
 unsigned long start = 0;
 bool is_takeoff = false;
 bool is_land = false;
 bool is_sonic_fly = false;
+bool is_get_red = false;
 //bool switched = false;
 
 //////////////////////////////////////////////////////////////////
@@ -48,11 +56,13 @@ float s=0;
 float kp=0.25;
 float ki=0.01;
 float kd=0.01;
+
 void setup() {
   //initiallize default ppm values
   //  if(debug == true) {
   // 設為115200平滑接收監控訊息
-  Serial.begin(115200);
+  BT.begin(115200);
+  BT.begin(9600);
   //  }
   for (int i = 0; i < chanel_number; i++) {
     ppm[i] = default_servo_value;
@@ -76,10 +86,9 @@ void setup() {
 
   timer = millis();
   before= millis();
-  
-  pixy.init();
+  //==========================================================主程式
 }
-//==========================================================主程式
+
 void loop() {
   debug();
   ch5 = pulseIn(8, HIGH); //飛行模式
@@ -111,7 +120,7 @@ void rc_mode(void ) {
       start = millis();
       ppm[3] = 1910;
     } else {
-      ppm[3] = pulseIn(9, HIGH); //mode
+      ppm[3] = pulseIn(9, HIGH); //yaw
     }
   }
 // 為了Pixy讓出三隻plueIn腳
@@ -123,6 +132,7 @@ void rc_mode(void ) {
 
 void mission_mode(void ) {
   is_land = false;
+  is_get_red = false;
   if (is_takeoff == false) {
     start = millis();
     is_takeoff = true;
@@ -145,57 +155,75 @@ void mission_mode(void ) {
       ppm[2] = ppm_value; //1440
 
       if (is_sonic_fly == false) {
-        if ((sonar_cm >75) && ((millis() - timer) >= 1000)) {
-          timer = millis();
-          ppm_value -= 2;
-          c=1;
-        }
-        else if ((sonar_cm <= 75) && (c==1)) {
-          is_sonic_fly = true;
-          c=2;
-        }
-      }
-      if (c==2) {
-        if ((sonar_cm <=75) && ((millis() - timer) >= 400)) {
-          timer = millis();
-          ppm_value += 5;
-      //    ppm[2] = 1480;
-      //    delay(300);
-       //   ppm[2]=ppm_value; 
-          c=3;
-        }
-      }
-       if (c==3) {
-        if ((sonar_cm <75) && ((millis() - timer) >= 1000)) {
+        if ((sonar_cm < 75) && ((millis() - timer) >= 1000)) {
           timer = millis();
           ppm_value += 2;
         }
-       else if (sonar_cm >75) {
-          timer = millis();
-          c=4;
+        else if (sonar_cm >= 75) {
+          is_sonic_fly = true;
         }
-       }
-       if (c==4) {
-        if ((millis() - timer) >= 1000) {
-          n_speed=1468;
-          set_d=75;
-          c=5; 
+      } else {
+        if(is_get_red == false) {
+          is_get_red = get_color_info();
+          //前進ppm = 中心ppm + 差值
+          ppm[1] = pitch_center+10;
+        } else {
+          ppm[1] = pitch_center;
         }
-       }
-       if (c==5) {
-        alt_pid();
-       }
+      }
+
+//      if (is_sonic_fly == false) {
+//        if ((sonar_cm >75) && ((millis() - timer) >= 1000)) {
+//          timer = millis();
+//          ppm_value -= 2;
+//          c=1;
+//        }
+//        else if ((sonar_cm <= 75) && (c==1)) {
+//          is_sonic_fly = true;
+//          c=2;
+//        }
+//      }
+//      if (c==2) {
+//        if ((sonar_cm <=75) && ((millis() - timer) >= 400)) {
+//          timer = millis();
+//          ppm_value += 5;
+//      //    ppm[2] = 1480;
+//      //    delay(300);
+//       //   ppm[2]=ppm_value; 
+//          c=3;
+//        }
+//      }
+//       if (c==3) {
+//        if ((sonar_cm <75) && ((millis() - timer) >= 1000)) {
+//          timer = millis();
+//          ppm_value += 2;
+//        }
+//       else if (sonar_cm >75) {
+//          timer = millis();
+//          c=4;
+//        }
+//       }
+//       if (c==4) {
+//        if ((millis() - timer) >= 1000) {
+//          n_speed=1468;
+//          set_d=75;
+//          c=5; 
+//        }
+//       }
+//       if (c==5) {
+//        alt_pid();
+//       }
     }
 
       //      else {
       //        //        openmv
       //        if (millis() - before <= 500) {
-      //          if (Serial.available() > 0) {
-      //            if (Serial.read() == '\n') {
-      //              Serial.readBytes(cmd, 4);
+      //          if (BT.available() > 0) {
+      //            if (BT.read() == '\n') {
+      //              BT.readBytes(cmd, 4);
       //            }
       //            //        }
-      //            //        Serial.readBytes(garbage, 10);
+      //            //        BT.readBytes(garbage, 10);
       //            ppm[1] = pitch_center;
       //            ppm[3] = atoi(cmd);
       //          }
@@ -272,18 +300,18 @@ void land_mode(void ) {
 }
 void debug(void) {
   if ( ch5 < 1300) {
-    Serial.println("================Radio Mode================");
-    Serial.print("roll:");
-    Serial.println(ppm[0]);
-    Serial.print("pitch:");
-    Serial.println(ppm[1]);
-    Serial.print("throttle:");
-    Serial.println(ppm[2]);
-    Serial.print("yaw:");
-    Serial.println(ppm[3]);
-    Serial.print("mode:");
-    Serial.println(ppm[4]);
-    Serial.print("start:");
+    BT.println("================Radio Mode================");
+    BT.print("roll:");
+    BT.println(ppm[0]);
+    BT.print("pitch:");
+    BT.println(ppm[1]);
+    BT.print("throttle:");
+    BT.println(ppm[2]);
+    BT.print("yaw:");
+    BT.println(ppm[3]);
+    BT.print("mode:");
+    BT.println(ppm[4]);
+    print("start:");
     Serial.println(start / 1000);
     Serial.print("now:");
     Serial.println(now / 1000);
@@ -324,6 +352,57 @@ void debug(void) {
 
   }
 }
+
+// 來源:pixy範例hello_world
+int get_color_info(void )
+{
+  static int i = 0;
+  int j;
+  uint16_t blocks;
+  char buf[32];
+  int center_x[2] = {0};
+  int center_y[2] = {0};
+  int our_blocks[2] = {0};
+  int c_idx;
+
+  // grab blocks!
+  blocks = pixy.getBlocks();
+
+  // If there are detect blocks, print them!
+  if (blocks)
+  {
+    i++;
+
+    // do this (print) every 50 frames because printing every
+    // frame would bog down the Arduino
+    if (i % 1 == 0)
+    {
+      sprintf(buf, "Detected %d:\n", blocks);
+      Serial.print(buf);
+      for (j = 0; j < blocks; j++)
+      {
+        sprintf(buf, "  block %d: ", j);
+        Serial.print(buf);
+        pixy.blocks[j].print();
+        // 1是紅綠燈紅色, 
+        if(pixy.blocks[j].signature==1 || pixy.blocks[j].signature==2) {
+          c_idx = pixy.blocks[j].signature-1;
+          our_blocks[c_idx] += 1;
+          center_x[c_idx] += pixy.blocks[j].x;
+          center_y[c_idx] += pixy.blocks[j].y;
+        }
+      }
+      if(our_blocks[c_idx]) {
+        center_x[c_idx] = int(center_x[c_idx] / our_blocks[c_idx]);
+        center_y[c_idx] = int(center_y[c_idx] / our_blocks[c_idx]);
+        Serial.println(String("")+"Color "+int(c_idx+1)+" Center:");
+        Serial.println(String("")+"x: "+center_x[c_idx]+" y: "+center_y[c_idx]);
+      }
+      return our_blocks[0];
+    }
+  }
+}
+
 
 //====================================================PPM產生
 ISR(TIMER1_COMPA_vect) {

@@ -26,7 +26,7 @@ GRAYSCALE_THRESHOLD = [(0, 90)]
 # to the roi near the bottom of the image and less to the next roi and so on.
 ROIS = [ # [ROI, weight]three point weight setting
         (0, 100, 160, 20, 0.5), # You'll need to tweak the weights for your app
-        (0,  50, 160, 20, 0), # depending on how your robot is setup.
+        (0,  50, 160, 20, 0.5), # depending on how your robot is setup.
         (0,   0, 160, 20, 0.5)
        ]
 
@@ -84,7 +84,7 @@ while(True):
     # Now you have an angle telling you how much to turn the robot by which
     # incorporates the part of the line nearest to the robot and parts of
     # the line farther away from the robot for a better prediction.
-    #print("Turn Angle: %f" % deflection_angle)
+    print("Turn Angle: %f" % deflection_angle)
     if (deflection_angle>=10) and (deflection_angle<= 25):#Direction and angle setting
         yaw=1420
 
