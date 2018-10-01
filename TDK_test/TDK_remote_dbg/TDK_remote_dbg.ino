@@ -6,19 +6,24 @@
 #define PPM_PulseLen 300  //set the pulse length
 #define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
 #define sigPin 2  //set PPM signal output pin on the arduino
-#define TRIG_PIN 7
-#define ECHO_PIN 6
+#define TRIG_PIN 13
+#define ECHO_PIN 12
+#define ch1_pin 3
+#define ch2_pin 4
+#define ch3_pin 5
+#define ch4_pin 6
+#define ch7_pin 7
 #define MAX_DISTANCE 200
 #define roll_center 1445  //好螺旋1460
 #define pitch_center 1420  //好螺旋1445
 #define yaw_center 1484
-#include <SoftwareSerial.h>   // 引用程式庫
+//#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
 
 
 // 定義連接藍牙模組的序列埠
-SoftwareSerial BT(3, 12); // 接收腳, 傳送腳
+//SoftwareSerial BT(3, 12); // 接收腳, 傳送腳
 char val;  // 儲存接收資料的變數
 
 //#define debug false
@@ -29,10 +34,12 @@ Pixy pixy;
 
 unsigned long now, timer, before;
 unsigned long start = 0;
+unsigned long interval = 0;
 bool is_takeoff = false;
 bool is_land = false;
 bool is_sonic_fly = false;
 bool is_get_red = false;
+bool is_error = false;
 //bool switched = false;
 
 //////////////////////////////////////////////////////////////////
@@ -64,16 +71,16 @@ void setup() {
   //  if(debug == true) {
   // 設為115200平滑接收監控訊息
   Serial.begin(115200);
-  BT.begin(9600);
+  Serial1.begin(115200);
   //  }
   for (int i = 0; i < chanel_number; i++) {
     ppm[i] = default_servo_value;
   }
-  pinMode(12, INPUT);
-  pinMode(11, INPUT);
-  pinMode(10, INPUT);
-  pinMode(9, INPUT);
-  pinMode(8, INPUT);
+  pinMode(ch1_pin, INPUT);
+  pinMode(ch2_pin, INPUT);
+  pinMode(ch3_pin, INPUT);
+  pinMode(ch4_pin, INPUT);
+  pinMode(ch7_pin, INPUT);
   pinMode(sigPin, OUTPUT);
   digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
   cli();
@@ -95,18 +102,30 @@ void setup() {
 
 //==========================================================主程式
 void loop() {
-  debug();
+
+
+  //每隔0.4秒藍芽發送紀錄
+  if ((millis() - interval) > 400) {
+    debug();
+    interval = millis();
+  }
   //  get_color_info();
-  ch5 = pulseIn(8, HIGH); //飛行模式
-  ppm[4] = ch5; //mode
-  if ( ch5 < 1300) { //遙控模式
-    rc_mode();
-  }
-  else if (ch5 >= 1300 && ch5 < 1600) { //任務模式
-    mission_mode();
-  }
-  else { //救機降落
+  if (ppm[2] >= 1500 || is_error == true) {
+    is_error = true;
     land_mode();
+  }
+  else {
+    ch5 = pulseIn(ch7_pin, HIGH); //飛行模式
+    ppm[4] = ch5; //mode
+    if ( ch5 < 1300) { //遙控模式
+      rc_mode();
+    }
+    else if (ch5 >= 1300 && ch5 < 1600) { //任務模式
+      mission_mode();
+    }
+    else { //降落模式
+      land_mode();
+    }
   }
 
   //  if(ppm[2]>=1500) { //緊急停止
@@ -121,21 +140,22 @@ void rc_mode(void ) {
   is_land = false;
   is_sonic_fly = false;
   is_get_red = false;
+  //  is_error = false;
   int yaw;
   // 解鎖
   if (millis() - start > 1000) {
-    if ((yaw = pulseIn(9, HIGH)) > 1900 ) {
+    if ((yaw = pulseIn(ch4_pin, HIGH)) > 1900 ) {
       start = millis();
       ppm[3] = 1910;
     } else {
       ppm[3] = yaw; //yaw
     }
   }
-  // 為了Pixy讓出三隻plueIn腳
-  ppm[0] = pulseIn(12, HIGH); //roll
-  ppm[1] = pulseIn(11, HIGH); //pitch
-  ppm[2] = pulseIn(10, HIGH) - 150; //油門
-  ppm[4] = pulseIn(8, HIGH); //mode
+  // 為了Pixy讓出三隻plueIn腳(Uno版)
+  ppm[0] = pulseIn(ch1_pin, HIGH); //roll
+  ppm[1] = pulseIn(ch2_pin, HIGH); //pitch
+  ppm[2] = pulseIn(ch3_pin, HIGH) - 150; //油門
+  ppm[4] = pulseIn(ch7_pin, HIGH); //mode
 }
 
 void mission_mode(void ) {
@@ -143,7 +163,7 @@ void mission_mode(void ) {
   if (is_takeoff == false) {
     start = millis();
     is_takeoff = true;
-    ppm_value = 1468;
+    ppm_value = 1448;
 
   }
   else {
@@ -162,22 +182,23 @@ void mission_mode(void ) {
       ppm[2] = ppm_value; //1440
 
       if (is_sonic_fly == false) {
-        if ((sonar_cm < 2) && ((millis() - timer) >= 1000)) {
+        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 5) ) {
           timer = millis();
           ppm_value += 2;
         }
-        else if (sonar_cm >= 2) {
+        else if (sonar_cm >= 75) {
           is_sonic_fly = true;
         }
-      } else {
-        if (!is_get_red) {
-          is_get_red = get_color_info();
-          //前進ppm = 中心ppm + 差值
-          ppm[1] = pitch_center + 10;
-        } else {
-          ppm[1] = pitch_center;
-        }
       }
+            else {
+              if (!is_get_red) {
+                is_get_red = get_color_info();
+                //前進ppm = 中心ppm + 差值
+                ppm[1] = pitch_center - 10;
+              } else {
+                ppm[1] = pitch_center;
+              }
+            }
 
       //      if (is_sonic_fly == false) {
       //        if ((sonar_cm >75) && ((millis() - timer) >= 1000)) {
@@ -225,12 +246,12 @@ void mission_mode(void ) {
     //      else {
     //        //        openmv
     //        if (millis() - before <= 500) {
-    //          if (BT.available() > 0) {
-    //            if (BT.read() == '\n') {
-    //              BT.readBytes(cmd, 4);
+    //          if (Serial1.available() > 0) {
+    //            if (Serial1.read() == '\n') {
+    //              Serial1.readBytes(cmd, 4);
     //            }
     //            //        }
-    //            //        BT.readBytes(garbage, 10);
+    //            //        Serial1.readBytes(garbage, 10);
     //            ppm[1] = pitch_center;
     //            ppm[3] = atoi(cmd);
     //          }
@@ -251,7 +272,7 @@ void land_mode(void ) {
   is_sonic_fly = false;
   is_takeoff = false;
   is_get_red = false;
-  
+
   if (is_land == false) {
     ppm[0] = roll_center;
     ppm[1] = pitch_center;
@@ -262,7 +283,7 @@ void land_mode(void ) {
   }
   else {
     now = millis();
-    if (now - start <= 12000) {
+    if (ppm[2]>1430) {
       if (now - before >= 2750) {
         before = millis();
         ppm[2] -= 5;
@@ -306,99 +327,91 @@ void land_mode(void ) {
     //  }
   }
 }
-void debug(void) {
-  //  if ( ch5 < 1300) {
-  //    BT.println("================Radio Mode================");
-  //    BT.print("roll:");
-  //    BT.println(ppm[0]);
-  //    BT.print("pitch:");
-  //    BT.println(ppm[1]);
-  //    BT.print("throttle:");
-  //    BT.println(ppm[2]);
-  //    BT.print("yaw:");
-  //    BT.println(ppm[3]);
-  //    BT.print("mode:");
-  //    BT.println(ppm[4]);
-  //    BT.print("start:");
-  //    BT.println(start / 1000);
-  //    BT.print("now:");
-  //    BT.println(now / 1000);
-  //  } else if (ch5 >= 1300 && ch5 < 1600) {
-  //    BT.println("================Mission Mode================");
-  //    //    BT.print("mode:");
-  //    //    BT.println(ppm[4]);
-  //    BT.print("throttle:");
-  //    BT.println(ppm[2]);
-  //    //    if (is_sonic_fly == true) {
-  //    BT.print("yaw:");
-  //    BT.println(ppm[3]);
-  //    BT.print("pitch:");
-  //    BT.println(ppm[1]);
-  //    //    }
-  //    //    else {
-  //    BT.print("start:");
-  //    BT.println(start / 1000);
-  //    //    BT.print("timer:");
-  //    //    BT.println(timer / 1000);
-  //    BT.print("now:");
-  //    BT.println(now / 1000);
-  //    //    }
-  //    BT.print("cm:");
-  //    BT.println(sonar_cm);
-  //  } else {
-  //    BT.println("================Save-Land Mode================");
-  //    BT.print("mode:");
-  //    BT.println(ppm[4]);
-  //    BT.print("throttle:");
-  //    BT.println(ppm[2]);
-  //    BT.print("start:");
-  //    BT.println(start / 1000);
-  //    BT.print("before:");
-  //    BT.println(before / 1000);
-  //    BT.print("now:");
-  //    BT.println(now / 1000);
-  //
-  //  }
-
+void debug() {
+  char cgy[10];
   if ( ch5 < 1300) {
-    Serial.println("================Radio Mode================");
+    Serial1.println("================Radio Mode================");
   } else if (ch5 >= 1300 && ch5 < 1600) {
-    Serial.println("================Mission Mode================");
-    Serial.print("cm: ");
-    Serial.println(sonar_cm);
+    Serial1.println("================Mission Mode================");
+    Serial1.print("now-start: ");
+    Serial1.println((now - start) / 1000);
+    Serial1.print("cm: ");
+    Serial1.println(sonar_cm);
   } else {
-    Serial.println("================Save-Land Mode================");
-    Serial.print("before: ");
-    Serial.println(before / 1000);
+    Serial1.println("================Save-Land Mode================");
+    Serial1.print("now-start: ");
+    Serial1.println((now - start) / 1000);
+    Serial1.print("before: ");
+    Serial1.println(before / 1000);
   }
-  
-  Serial.print("mode: ");
-  Serial.println(ppm[4]);
-  Serial.print("throttle: ");
-  Serial.println(ppm[2]);
-  Serial.print("roll: ");
-  if(ppm[0] == roll_center) {
-  Serial.println("Center");
-  } else { 
-    Serial.println(ppm[0]);
-  }
-  Serial.print("pitch: ");
-  if(ppm[1] == pitch_center) {
-  Serial.println("Center");
-  } else { 
-    Serial.println(ppm[1]);
-  }
-  Serial.print("yaw: ");
-  if(ppm[3] == roll_center) {
-  Serial.println("Center");
-  } else { 
-    Serial.println(ppm[3]);
-  }
-  Serial.print("start: ");
-  Serial.println(start / 1000);
-  Serial.print("now: ");
-  Serial.println(now / 1000);
 
+  Serial1.print("mode: ");
+  Serial1.println(ppm[4]);
+  Serial1.print("throttle: ");
+  Serial1.println(ppm[2]);
+  Serial1.print("roll: ");
+  if (ppm[0] == roll_center) {
+    Serial1.println("Center");
+  } else {
+    sprintf(cgy, "%+5d", (ppm[0] - roll_center));
+    Serial1.println(cgy);
+  }
+  Serial1.print("pitch: ");
+  if (ppm[1] == pitch_center) {
+    Serial1.println("Center");
+  } else {
+    sprintf(cgy, "%+5d", (ppm[1] - pitch_center));
+    Serial1.println(cgy);
+  }
+  Serial1.print("yaw: ");
+  if (ppm[3] == yaw_center) {
+    Serial1.println("Center");
+  } else {
+    sprintf(cgy, "%+5d", (ppm[3] - yaw_center));
+    Serial1.println(cgy);
+  }
+
+  //  if ( ch5 < 1300) {
+  //    Serial.println("================Radio Mode================");
+  //  } else if (ch5 >= 1300 && ch5 < 1600) {
+  //    Serial.println("================Mission Mode================");
+  //    Serial.print("now-start: ");
+  //    Serial.println((now - start) / 1000);
+  //    Serial.print("cm: ");
+  //    Serial.println(sonar_cm);
+  //  } else {
+  //    Serial.println("================Save-Land Mode================");
+  //    Serial.print("now-start: ");
+  //    Serial.println((now - start) / 1000);
+  //    Serial.print("before: ");
+  //    Serial.println(before / 1000);
+  //  }
+  //
+  //  Serial.print("mode: ");
+  //  Serial.println(ppm[4]);
+  //  Serial.print("throttle: ");
+  //  Serial.println(ppm[2]);
+  //  Serial.print("roll: ");
+  //  if (ppm[0] == roll_center) {
+  //    Serial.println("Center");
+  //  } else {
+  //    sprintf(cgy, "%+5d", (ppm[0] - roll_center));
+  //    Serial.println(cgy);
+  //  }
+  //  Serial.print("pitch: ");
+  //  if (ppm[1] == pitch_center) {
+  //    Serial.println("Center");
+  //  } else {
+  //    sprintf(cgy, "%+5d", (ppm[1] - pitch_center));
+  //    Serial.println(cgy);
+  //  }
+  //  Serial.print("yaw: ");
+  //  if (ppm[3] == yaw_center) {
+  //    Serial.println("Center");
+  //  } else {
+  //    sprintf(cgy, "%+5d", (ppm[3] - yaw_center));
+  //    Serial.println(cgy);
+  //  }
 }
 
 // 來源:pixy範例hello_world
@@ -426,12 +439,12 @@ int get_color_info(void )
     if (frames % 5 == 0)
     {
       //            sprintf(buf, "Detected %d:\n", blocks);
-      //      BT.print(buf);
+      //      Serial1.print(buf);
       //            Serial.print(buf);
       for (j = 0; j < blocks; j++)
       {
         //                sprintf(buf, "  block %d: ", j);
-        //        BT.print(buf);
+        //        Serial1.print(buf);
         //                Serial.print(buf);
         //                pixy.blocks[j].print();
         // 1是紅綠燈紅色,
@@ -443,18 +456,17 @@ int get_color_info(void )
         }
       }
       for (int k = 0; k < colors; k++) {
-        if (our_blocks[k] == 2) {
-          center_x[k] = int(center_x[k] / our_blocks[k]);
-          center_y[k] = int(center_y[k] / our_blocks[k]);
-          //          BT.println(String("") + "Color " + int(k + 1) + " Center:");
-          Serial.println(String("") + "Color " + int(k + 1) + " Center:");
-          //          BT.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
-          Serial.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
-          Serial.println("");
-          return our_blocks[0];
-        }
+        //        if (our_blocks[k] == 2) {
+        center_x[k] = int(center_x[k] / our_blocks[k]);
+        center_y[k] = int(center_y[k] / our_blocks[k]);
+        //          Serial1.println(String("") + "Color " + int(k + 1) + " Center:");
+        Serial.println(String("") + "Color " + int(k + 1) + " Center:");
+        //          Serial1.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
+        Serial.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
+        Serial.println("");
+        return our_blocks[0];
+        //        }
       }
-
     }
   }
 }
