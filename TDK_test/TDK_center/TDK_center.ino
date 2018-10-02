@@ -1,6 +1,6 @@
 #include <NewPing.h>
 #include <SPI.h>
-#include <Pixy.h>
+// #include <Pixy.h>
 #define chanel_number 8  //set the number of chanels
 #define default_servo_value 1500  //set the default servo value
 #define PPM_FrLen 22500  //set the PPM frame length in microseconds (1ms = 1000µs)
