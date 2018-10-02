@@ -9,8 +9,8 @@
 #define TRIG_PIN 7
 #define ECHO_PIN 6
 #define MAX_DISTANCE 200
-#define roll_center 1450  //好螺旋1460
-#define pitch_center 1410  //好螺旋1445
+#define roll_center 1445  //好螺旋1460
+#define pitch_center 1420  //好螺旋1445
 #define yaw_center 1484
 
 //#define debug false
@@ -68,7 +68,8 @@ void setup() {
 }
 
 void loop() {
-  debug();
+  //非除錯時請註解下行
+  // debug();
   ch5 = pulseIn(8, HIGH); //飛行模式
   ppm[4] = ch5; //mode
   if ( ch5 < 1300) { //遙控模式
@@ -104,7 +105,7 @@ void rc_mode(void ) {
 
   ppm[0] = pulseIn(12, HIGH); //roll
   ppm[1] = pulseIn(11, HIGH); //pitch
-  ppm[2] = pulseIn(10, HIGH); //油門
+  ppm[2] = pulseIn(10, HIGH) - 150; //油門
   ppm[4] = pulseIn(8, HIGH); //mode
 }
 
@@ -118,7 +119,7 @@ void mission_mode(void ) {
   }
   else {
     now = millis();
-    if (now - start <= 5000) {
+    if (now - start <= 12000) {
       ppm[0] = roll_center;//1500,1460
       ppm[1] = pitch_center;//1435,1450
       ppm[2] = 1420; //1465
@@ -172,7 +173,10 @@ void land_mode(void ) {
   if (is_land == false) {
     ppm[0] = roll_center;
     ppm[1] = pitch_center;
-    ppm[2] = 1480;//1450
+    if(ppm[2] >= 1500) {
+      ppm_value = 1480;
+    }
+    ppm[2] = ppm_value; //1480 //1450
     ppm[3] = yaw_center;
     start = millis();
     is_land = true;
