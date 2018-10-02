@@ -67,7 +67,7 @@ float kp = 0.25;
 float ki = 0.01;
 float kd = 0.01;
 
-int error_ppm=2555;
+//int error_ppm=2555;
 
 void setup()
 {
@@ -140,8 +140,8 @@ void loop()
     { //遙控模式
       if (!is_sonic_fly)
         rc_mode();
-      else
-        error_ppm = ppm[4];
+//      else
+//        error_ppm = ppm[4];
     }
     else if (ppm[4] >= 1300 && ppm[4] < 1600)
     { //任務模式
@@ -385,8 +385,8 @@ void print_status()
   char cgy[10];
   if (debug == "BT")
   {
-    Serial1.print("ERROR_MODE_PPM: ");
-    Serial1.println(error_ppm);
+//    Serial1.print("ERROR_MODE_PPM: ");
+//    Serial1.println(error_ppm);
     if (ppm[4] < 1300)
     {
       Serial1.println("================Radio Mode================");
