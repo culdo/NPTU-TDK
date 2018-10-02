@@ -169,14 +169,14 @@ void mission_mode(void ) {
   }
   else {
 //    now = millis();
-    if ((now = millis()) - start <= 5000) {
+    if (((now = millis()) - start) <= 5000) {
       ppm[0] = roll_center;//1500,1460
       ppm[1] = pitch_center;//1435,1450
       ppm[2] = 1420; //1465
       ppm[3] = yaw_center;//1500
     }
     else {
-      if ((now = millis()) - before >= 1000) {
+      if (((now = millis()) - before) >= 1000) {
         sonar_cm = sonar.ping_cm();
         before = millis();
       }
