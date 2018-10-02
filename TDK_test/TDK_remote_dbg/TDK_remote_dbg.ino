@@ -17,7 +17,7 @@
 #define roll_center 1445  //好螺旋1460
 #define pitch_center 1420 //好螺旋1445
 #define yaw_center 1484
-#define debug "PC"
+#define debug "BT"
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -163,14 +163,14 @@ void rc_mode(void)
   // 解鎖
   if (millis() - start > 1000)
   {
-    if ((yaw = pulseIn(ch4_pin, HIGH)) > 1900)
+    if ((pulseIn(ch4_pin, HIGH)) > 1900)
     {
       start = millis();
       ppm[3] = 1910;
     }
     else
     {
-      ppm[3] = yaw; //yaw
+      ppm[3] = pulseIn(ch4_pin, HIGH); //yaw
     }
   }
   // 為了Pixy讓出三隻plueIn腳(Uno板)
@@ -187,7 +187,7 @@ void mission_mode(void)
   {
     start = millis();
     is_takeoff = true;
-    ppm_value = 1448;
+    ppm_value = 1455;
   }
   else
   {
@@ -220,19 +220,19 @@ void mission_mode(void)
           is_sonic_fly = true;
         }
       }
-      else
-      {
-        if (!is_get_red)
-        {
-          is_get_red = get_color_info();
-          //往前ppm = 中心ppm - 差值
-          ppm[1] = pitch_center - 10;
-        }
-        else
-        {
-          ppm[1] = pitch_center;
-        }
-      }
+//      else
+//      {
+//        if (!is_get_red)
+//        {
+//          is_get_red = get_color_info();
+//          //往前ppm = 中心ppm - 差值
+//          ppm[1] = pitch_center - 10;
+//        }
+//        else
+//        {
+//          ppm[1] = pitch_center;
+//        }
+//      }
 
       //      if (is_sonic_fly == false) {
       //        if ((sonar_cm >75) && ((millis() - timer) >= 1000)) {
