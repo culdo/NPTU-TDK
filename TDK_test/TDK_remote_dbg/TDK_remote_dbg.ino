@@ -67,6 +67,8 @@ float kp = 0.25;
 float ki = 0.01;
 float kd = 0.01;
 
+int error_ppm=2555;
+
 void setup()
 {
   //initiallize default ppm values
@@ -118,7 +120,7 @@ void loop()
     if ((millis() - interval) > 400)
     {
       print_status();
-//      get_color_info();
+      //      get_color_info();
       interval = millis();
     }
   }
@@ -131,10 +133,15 @@ void loop()
   else
   {
     ppm[4] = pulseIn(ch7_pin, HIGH); //飛行模式
-//    ppm[4] = ppm[4];                 //mode
-    if (ppm[4] < 1300)
+    //    ppm[4] = ppm[4];                 //mode
+
+    //    if (ppm[4] < 1300 && (!is_sonic_fly))
+    if (ppm[4] < 1300 )
     { //遙控模式
-      rc_mode();
+      if (!is_sonic_fly)
+        rc_mode();
+      else
+        error_ppm = ppm[4];
     }
     else if (ppm[4] >= 1300 && ppm[4] < 1600)
     { //任務模式
@@ -178,7 +185,7 @@ void rc_mode(void)
   ppm[0] = pulseIn(ch1_pin, HIGH);       //roll
   ppm[1] = pulseIn(ch2_pin, HIGH);       //pitch
   ppm[2] = pulseIn(ch3_pin, HIGH) - 150; //油門
-//  ppm[4] = pulseIn(ch7_pin, HIGH);       //mode
+  //  ppm[4] = pulseIn(ch7_pin, HIGH);       //mode
 }
 
 void mission_mode(void)
@@ -211,29 +218,29 @@ void mission_mode(void)
 
       if (is_sonic_fly == false)
       {
-        if ((sonar_cm < 2) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
+        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
         {
           timer = millis();
           ppm_value += 2;
         }
-        else if (sonar_cm >= 2)
+        else if (sonar_cm >= 75)
         {
           is_sonic_fly = true;
         }
       }
-//      else
-//      {
-//        if (!is_get_red)
-//        {
-//          is_get_red = get_color_info();
-//          //往前ppm = 中心ppm - 差值
-//          ppm[1] = pitch_center - 10;
-//        }
-//        else
-//        {
-//          ppm[1] = pitch_center;
-//        }
-//      }
+      //      else
+      //      {
+      //        if (!is_get_red)
+      //        {
+      //          is_get_red = get_color_info();
+      //          //往前ppm = 中心ppm - 差值
+      //          ppm[1] = pitch_center - 10;
+      //        }
+      //        else
+      //        {
+      //          ppm[1] = pitch_center;
+      //        }
+      //      }
 
       //      if (is_sonic_fly == false) {
       //        if ((sonar_cm >75) && ((millis() - timer) >= 1000)) {
@@ -305,7 +312,7 @@ void mission_mode(void)
 void land_mode(void)
 {
   is_sonic_fly = false;
-  is_takeoff = false;
+  //  is_takeoff = false;
   is_get_red = false;
 
   if (is_land == false)
@@ -335,6 +342,11 @@ void land_mode(void)
       ppm[2] = 1000;
       ppm[3] = 1000;
       ppm[4] = 1800;
+
+    }
+
+    if (ppm[2] <= 1450) {
+      is_sonic_fly = false;
     }
     //    if (now - start <= 2000) {
     //      ppm[0] = roll_center;
@@ -373,6 +385,8 @@ void print_status()
   char cgy[10];
   if (debug == "BT")
   {
+    Serial1.print("ERROR_MODE_PPM: ");
+    Serial1.println(error_ppm);
     if (ppm[4] < 1300)
     {
       Serial1.println("================Radio Mode================");
@@ -490,7 +504,7 @@ void print_status()
       Serial.println(cgy);
     }
   }
-  
+
 }
 
 // 來源:pixy範例hello_world
@@ -552,7 +566,7 @@ int get_color_info(void)
           Serial.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
           Serial.println("");
         }
- 
+
         return our_blocks[0];
       }
     }
