@@ -1,5 +1,6 @@
 #include <NewPing.h>
 #include <SPI.h>
+#include <Pixy.h>
 #define chanel_number 8  //set the number of chanels
 #define default_servo_value 1500  //set the default servo value
 #define PPM_FrLen 22500  //set the PPM frame length in microseconds (1ms = 1000µs)
@@ -14,7 +15,7 @@
 #define yaw_center 1484
 
 //#define debug false
-
+Pixy pixy;
 NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
 
 unsigned long now, timer, before;
@@ -36,7 +37,17 @@ int sonar_cm;
 char cmd[4];
 char garbage[4];
 int openmv;
-
+int c=0;
+float control;
+float n_speed;
+int new_speed;
+float pre_e=0;
+int set_d;
+float error;
+float s=0; 
+float kp=0.25;
+float ki=0.01;
+float kd=0.01;
 void setup() {
   //initiallize default ppm values
   //  if(debug == true) {
@@ -64,9 +75,11 @@ void setup() {
   sei();
 
   timer = millis();
-  //==========================================================主程式
+  before= millis();
+  
+  pixy.init();
 }
-
+//==========================================================主程式
 void loop() {
   //非除錯時請註解下行
   // debug();
@@ -102,10 +115,10 @@ void rc_mode(void ) {
       ppm[3] = pulseIn(9, HIGH); //mode
     }
   }
-
-  ppm[0] = pulseIn(12, HIGH); //roll
-  ppm[1] = pulseIn(11, HIGH); //pitch
-  ppm[2] = pulseIn(10, HIGH) - 150; //油門
+// 為了Pixy讓出三隻plueIn腳
+//  ppm[0] = pulseIn(12, HIGH); //roll
+//  ppm[1] = pulseIn(11, HIGH); //pitch
+//  ppm[2] = pulseIn(10, HIGH)-150; //油門
   ppm[4] = pulseIn(8, HIGH); //mode
 }
 
@@ -114,12 +127,12 @@ void mission_mode(void ) {
   if (is_takeoff == false) {
     start = millis();
     is_takeoff = true;
-    ppm_value = 1470;
+    ppm_value = 1468;
 
   }
   else {
-    now = millis();
-    if (now - start <= 12000) {
+    now = millis(); 
+    if (now - start <= 5000) {
       ppm[0] = roll_center;//1500,1460
       ppm[1] = pitch_center;//1435,1450
       ppm[2] = 1420; //1465
@@ -133,14 +146,48 @@ void mission_mode(void ) {
       ppm[2] = ppm_value; //1440
 
       if (is_sonic_fly == false) {
-        if ((sonar_cm < 75) && ((millis() - timer) >= 1000)) {
+        if ((sonar_cm >75) && ((millis() - timer) >= 1000)) {
+          timer = millis();
+          ppm_value -= 2;
+          c=1;
+        }
+        else if ((sonar_cm <= 75) && (c==1)) {
+          is_sonic_fly = true;
+          c=2;
+        }
+      }
+      if (c==2) {
+        if ((sonar_cm <=75) && ((millis() - timer) >= 400)) {
+          timer = millis();
+          ppm_value += 5;
+      //    ppm[2] = 1480;
+      //    delay(300);
+       //   ppm[2]=ppm_value; 
+          c=3;
+        }
+      }
+       if (c==3) {
+        if ((sonar_cm <75) && ((millis() - timer) >= 1000)) {
           timer = millis();
           ppm_value += 2;
         }
-        else if (sonar_cm >= 75) {
-          is_sonic_fly = true;
+       else if (sonar_cm >75) {
+          timer = millis();
+          c=4;
         }
-      }
+       }
+       if (c==4) {
+        if ((millis() - timer) >= 1000) {
+          n_speed=1468;
+          set_d=75;
+          c=5; 
+        }
+       }
+       if (c==5) {
+        alt_pid();
+       }
+    }
+
       //      else {
       //        //        openmv
       //        if (millis() - before <= 500) {
@@ -164,7 +211,7 @@ void mission_mode(void ) {
       //      }
     }
   }
-}
+
 
 void land_mode(void ) {
   is_sonic_fly = false;
@@ -173,10 +220,7 @@ void land_mode(void ) {
   if (is_land == false) {
     ppm[0] = roll_center;
     ppm[1] = pitch_center;
-    if(ppm[2] >= 1500) {
-      ppm_value = 1480;
-    }
-    ppm[2] = ppm_value; //1480 //1450
+    ppm[2] = ppm_value;//1480;//1450
     ppm[3] = yaw_center;
     start = millis();
     is_land = true;
@@ -313,4 +357,22 @@ ISR(TIMER1_COMPA_vect) {
     }
   }
 }
+
+
+void alt_pid(void) {
+  error=set_d-sonar_cm;
+  s+=error;
+  control=kp*error+ki*s+kd*(error-pre_e);
+  pre_e=error;
+  new_speed=int(n_speed+control);
+  if (new_speed>=1470) {
+    new_speed=1470;
+  }
+  if (new_speed<=1460) {
+    new_speed=1460;
+  }
+  ppm[2] = new_speed;
+  ppm_value=new_speed;
+}
+
 

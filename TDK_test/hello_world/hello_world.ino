@@ -22,67 +22,66 @@
 // It prints the detected blocks once per second because printing all of the
 // blocks for all 50 frames per second would overwhelm the Arduino's serial port.
 //
-//#include <Servo.h>
+
 #include <SPI.h>
 #include <Pixy.h>
 
-//Servo myservo;
-//int pos = 0;
 // This is the main Pixy object
 Pixy pixy;
-int j=0;
-int k=1;
+
 void setup()
 {
   Serial.begin(115200);
-  //  Serial.print("Starting...\n");
-  //  myservo.attach(7);
+  Serial.print("Starting...\n");
+
   pixy.init();
 }
 
 void loop()
 {
-  //  static int i = 0;
-
+  static int i = 0;
+  int j;
   uint16_t blocks;
-  //  char buf[32];
+  char buf[32];
+  int center_x[2] = {0};
+  int center_y[2] = {0};
+  int our_blocks[2] = {0};
+  int c_idx;
 
   // grab blocks!
   blocks = pixy.getBlocks();
-  //  Serial.print(blocks);
-
 
   // If there are detect blocks, print them!
   if (blocks)
   {
-    //    Serial.print(blocks);
-    if (pixy.blocks[j].signature == 7)
+    i++;
+
+    // do this (print) every 50 frames because printing every
+    // frame would bog down the Arduino
+    if (i % 1 == 0)
     {
-      Serial.println(j);
-      //      pos ++;
-      //       Serial.println("1");
-      Serial.println(pixy.blocks[j].x);
-      Serial.println(pixy.blocks[j].y);
+      sprintf(buf, "Detected %d:\n", blocks);
+      Serial.print(buf);
+      for (j = 0; j < blocks; j++)
+      {
+        sprintf(buf, "  block %d: ", j);
+        Serial.print(buf);
+        pixy.blocks[j].print();
+        // 1是紅綠燈紅色, 
+        if(pixy.blocks[j].signature==1 || pixy.blocks[j].signature==2) {
+          c_idx = pixy.blocks[j].signature-1;
+          our_blocks[c_idx] += 1;
+          center_x[c_idx] += pixy.blocks[j].x;
+          center_y[c_idx] += pixy.blocks[j].y;
+        }
+      }
+      if(our_blocks[c_idx]) {
+        center_x[c_idx] = int(center_x[c_idx] / our_blocks[c_idx]);
+        center_y[c_idx] = int(center_y[c_idx] / our_blocks[c_idx]);
+        Serial.println(center_x[c_idx]);
+        Serial.println(center_y[c_idx]);
+      }
     }
-    //    else if (pixy.blocks[j].signature == 2)
-    //    {
-    //      pos --;
-    //       Serial.println("2");
-    //    }
-    //    Serial.println(pixy.blocks[j].signature);
-    //    if (pos >= 180) {
-    //      myservo.write(180);
-    ////      delay(10);
-    //    }
-    //    else if (pos <= 0) {
-    //      myservo.write(0);
-    ////      delay(10);
-    //    }
-    //    else {
-    //      myservo.write(pos);
-    ////      delay(10);
-    //    }
   }
-
-
 }
+
