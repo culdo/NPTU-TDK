@@ -1,11 +1,11 @@
 #include <NewPing.h>
 #include <SPI.h>
-#define chanel_number 8  //set the number of chanels
-#define default_servo_value 1000  //set the default servo value
-#define PPM_FrLen 22500  //set the PPM frame length in microseconds (1ms = 1000µs)
-#define PPM_PulseLen 300  //set the pulse length
-#define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
-#define sigPin 2  //set PPM signal output pin on the arduino
+#define chanel_number 8          //set the number of chanels
+#define default_servo_value 1000 //set the default servo value
+#define PPM_FrLen 22500          //set the PPM frame length in microseconds (1ms = 1000µs)
+#define PPM_PulseLen 300         //set the pulse length
+#define onState 1                //set polarity of the pulses: 1 is positive, 0 is negative
+#define sigPin 2                 //set PPM signal output pin on the arduino
 #define TRIG_PIN 13
 #define ECHO_PIN 12
 #define ch1_pin 3
@@ -15,17 +15,16 @@
 #define ch7_pin 7
 #define MAX_DISTANCE 200
 #define roll_center 1445  //好螺旋1460
-#define pitch_center 1420  //好螺旋1445
+#define pitch_center 1420 //好螺旋1445
 #define yaw_center 1484
-#define debug "BT"
+#define debug "PC"
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
 
-
 // 定義連接藍牙模組的序列埠
 //SoftwareSerial BT(3, 12); // 接收腳, 傳送腳
-char val;  // 儲存接收資料的變數
+char val; // 儲存接收資料的變數
 
 //#define debug false
 
@@ -44,7 +43,7 @@ bool is_error = false;
 //bool switched = false;
 
 //////////////////////////////////////////////////////////////////
-int ch5;
+//int ppm[4];
 /*this array holds the servo values for the ppm signal
   change theese values in your code (usually servo values move between 1000 and 2000)*/
 int ppm[chanel_number];
@@ -67,15 +66,21 @@ float kp = 0.25;
 float ki = 0.01;
 float kd = 0.01;
 
-void setup() {
+void setup()
+{
   //initiallize default ppm values
   // 設為115200平滑接收監控訊息
-  if (debug) {
-    Serial.begin(115200);
-    //藍芽鮑率
+  if (debug == "BT")
+  {
     Serial1.begin(115200);
   }
-  for (int i = 0; i < chanel_number; i++) {
+  else if (debug == "PC")
+  {
+    //藍芽鮑率
+    Serial.begin(115200);
+  }
+  for (int i = 0; i < chanel_number; i++)
+  {
     ppm[i] = default_servo_value;
   }
   pinMode(ch1_pin, INPUT);
@@ -84,14 +89,14 @@ void setup() {
   pinMode(ch4_pin, INPUT);
   pinMode(ch7_pin, INPUT);
   pinMode(sigPin, OUTPUT);
-  digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
+  digitalWrite(sigPin, !onState); //set the PPM signal pin to the default state (off)
   cli();
   TCCR1A = 0; // set entire TCCR1 register to 0
   TCCR1B = 0;
 
-  OCR1A = 100;  // compare match register, change this
+  OCR1A = 100;             // compare match register, change this
   TCCR1B |= (1 << WGM12);  // turn on CTC mode
-  TCCR1B |= (1 << CS11);  // 8 prescaler: 0,5 microseconds at 16mhz
+  TCCR1B |= (1 << CS11);   // 8 prescaler: 0,5 microseconds at 16mhz
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
 
@@ -100,36 +105,42 @@ void setup() {
   now = millis();
 
   pixy.init();
-
 }
 
 //==========================================================主程式
-void loop() {
-
+void loop()
+{
 
   //每隔0.4秒藍芽發送紀錄
-  if (debug) {
-    if ((millis() - interval) > 400) {
+  if (debug)
+  {
+    if ((millis() - interval) > 400)
+    {
       print_status();
       get_color_info();
       interval = millis();
     }
   }
 
-  if (ppm[2] >= 1500 || is_error == true) {
+  if (ppm[2] >= 1500 || is_error == true)
+  {
     is_error = true;
     land_mode();
   }
-  else {
-    ch5 = pulseIn(ch7_pin, HIGH); //飛行模式
-    ppm[4] = ch5; //mode
-    if ( ch5 < 1300) { //遙控模式
+  else
+  {
+    ppm[4] = pulseIn(ch7_pin, HIGH); //飛行模式
+//    ppm[4] = ppm[4];                 //mode
+    if (ppm[4] < 1300)
+    { //遙控模式
       rc_mode();
     }
-    else if (ch5 >= 1300 && ch5 < 1600) { //任務模式
+    else if (ppm[4] >= 1300 && ppm[4] < 1600)
+    { //任務模式
       mission_mode();
     }
-    else { //降落模式
+    else
+    { //降落模式
       land_mode();
     }
   }
@@ -141,7 +152,8 @@ void loop() {
   //    delay(100);
 }
 
-void rc_mode(void ) {
+void rc_mode(void)
+{
   is_takeoff = false;
   is_land = false;
   is_sonic_fly = false;
@@ -149,59 +161,75 @@ void rc_mode(void ) {
   //  is_error = false;
   int yaw;
   // 解鎖
-  if (millis() - start > 1000) {
-    if ((yaw = pulseIn(ch4_pin, HIGH)) > 1900 ) {
+  if (millis() - start > 1000)
+  {
+    if ((yaw = pulseIn(ch4_pin, HIGH)) > 1900)
+    {
       start = millis();
       ppm[3] = 1910;
-    } else {
+    }
+    else
+    {
       ppm[3] = yaw; //yaw
     }
   }
   // 為了Pixy讓出三隻plueIn腳(Uno板)
-  ppm[0] = pulseIn(ch1_pin, HIGH); //roll
-  ppm[1] = pulseIn(ch2_pin, HIGH); //pitch
+  ppm[0] = pulseIn(ch1_pin, HIGH);       //roll
+  ppm[1] = pulseIn(ch2_pin, HIGH);       //pitch
   ppm[2] = pulseIn(ch3_pin, HIGH) - 150; //油門
-  ppm[4] = pulseIn(ch7_pin, HIGH); //mode
+//  ppm[4] = pulseIn(ch7_pin, HIGH);       //mode
 }
 
-void mission_mode(void ) {
+void mission_mode(void)
+{
   is_land = false;
-  if (is_takeoff == false) {
+  if (is_takeoff == false)
+  {
     start = millis();
     is_takeoff = true;
     ppm_value = 1448;
-
   }
-  else {
+  else
+  {
     now = millis();
-    if ((now - start) <= 5000) {
-      ppm[0] = roll_center;//1500,1460
-      ppm[1] = pitch_center;//1435,1450
-      ppm[2] = 1420; //1465
-      ppm[3] = yaw_center;//1500
+    if ((now - start) <= 5000)
+    {
+      ppm[0] = roll_center;  //1500,1460
+      ppm[1] = pitch_center; //1435,1450
+      ppm[2] = 1420;         //1465
+      ppm[3] = yaw_center;   //1500
     }
-    else {
-      if ((millis() - before) >= 1000) {
+    else
+    {
+      if ((millis() - before) >= 1000)
+      {
         sonar_cm = sonar.ping_cm();
         before = millis();
       }
       ppm[2] = ppm_value; //1440
 
-      if (is_sonic_fly == false) {
-        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 5) ) {
+      if (is_sonic_fly == false)
+      {
+        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 5))
+        {
           timer = millis();
           ppm_value += 2;
         }
-        else if (sonar_cm >= 75) {
+        else if (sonar_cm >= 75)
+        {
           is_sonic_fly = true;
         }
       }
-      else {
-        if (!is_get_red) {
+      else
+      {
+        if (!is_get_red)
+        {
           is_get_red = get_color_info();
           //往前ppm = 中心ppm - 差值
           ppm[1] = pitch_center - 10;
-        } else {
+        }
+        else
+        {
           ppm[1] = pitch_center;
         }
       }
@@ -273,29 +301,34 @@ void mission_mode(void ) {
   }
 }
 
-
-void land_mode(void ) {
+void land_mode(void)
+{
   is_sonic_fly = false;
   is_takeoff = false;
   is_get_red = false;
 
-  if (is_land == false) {
+  if (is_land == false)
+  {
     ppm[0] = roll_center;
     ppm[1] = pitch_center;
-    ppm[2] = ppm_value;//1480;//1450
+    ppm[2] = ppm_value; //1480;//1450
     ppm[3] = yaw_center;
     start = millis();
     is_land = true;
   }
-  else {
+  else
+  {
     now = millis();
-    if (ppm[2] > 1430) {
-      if (now - before >= 2750) {
+    if (ppm[2] > 1430)
+    {
+      if (now - before >= 2750)
+      {
         before = millis();
         ppm[2] -= 5;
       }
     }
-    else {
+    else
+    {
       ppm[0] = 1470;
       ppm[1] = 1900;
       ppm[2] = 1000;
@@ -333,20 +366,26 @@ void land_mode(void ) {
     //  }
   }
 }
-void print_status() {
+void print_status()
+{
   // ==========================只能選擇一種debug方式其他Serial請comment掉!!!==========================
   char cgy[10];
-  if (debug == "BT") {
-    if ( ch5 < 1300) {
+  if (debug == "BT")
+  {
+    if (ppm[4] < 1300)
+    {
       Serial1.println("================Radio Mode================");
-    } else if (ch5 >= 1300 && ch5 < 1600) {
+    }
+    else if (ppm[4] >= 1300 && ppm[4] < 1600)
+    {
       Serial1.println("================Mission Mode================");
       Serial1.print("now-start: ");
       Serial1.println((now - start) / 1000);
       Serial1.print("cm: ");
       Serial1.println(sonar_cm);
-
-    } else {
+    }
+    else
+    {
       Serial1.println("================Save-Land Mode================");
       Serial1.print("now-start: ");
       Serial1.println((now - start) / 1000);
@@ -359,31 +398,45 @@ void print_status() {
     Serial1.print("throttle: ");
     Serial1.println(ppm[2]);
     Serial1.print("roll: ");
-    if (ppm[0] == roll_center) {
+    if (ppm[0] == roll_center)
+    {
       Serial1.println("Center");
-    } else {
+    }
+    else
+    {
       sprintf(cgy, "%+5d", (ppm[0] - roll_center));
       Serial1.println(cgy);
     }
     Serial1.print("pitch: ");
-    if (ppm[1] == pitch_center) {
+    if (ppm[1] == pitch_center)
+    {
       Serial1.println("Center");
-    } else {
+    }
+    else
+    {
       sprintf(cgy, "%+5d", (ppm[1] - pitch_center));
       Serial1.println(cgy);
     }
     Serial1.print("yaw: ");
-    if (ppm[3] == yaw_center) {
+    if (ppm[3] == yaw_center)
+    {
       Serial1.println("Center");
-    } else {
+    }
+    else
+    {
       sprintf(cgy, "%+5d", (ppm[3] - yaw_center));
       Serial1.println(cgy);
     }
-  } else if (debug == "PC") {
+  }
+  else if (debug == "PC")
+  {
 
-    if ( ch5 < 1300) {
+    if (ppm[4] < 1300)
+    {
       Serial.println("================Radio Mode================");
-    } else if (ch5 >= 1300 && ch5 < 1600) {
+    }
+    else if (ppm[4] >= 1300 && ppm[4] < 1600)
+    {
       Serial.println("================Mission Mode================");
       Serial.print("now-start: ");
       Serial.println((now - start) / 1000);
@@ -391,7 +444,9 @@ void print_status() {
       Serial.println(sonar_cm);
       //      Serial.println(now);
       //      Serial.println(start);
-    } else {
+    }
+    else
+    {
       Serial.println("================Save-Land Mode================");
       Serial.print("now-start: ");
       Serial.println((now - start) / 1000);
@@ -404,34 +459,41 @@ void print_status() {
     Serial.print("throttle: ");
     Serial.println(ppm[2]);
     Serial.print("roll: ");
-    if (ppm[0] == roll_center) {
+    if (ppm[0] == roll_center)
+    {
       Serial.println("Center");
-    } else {
+    }
+    else
+    {
       sprintf(cgy, "%+5d", (ppm[0] - roll_center));
       Serial.println(cgy);
     }
     Serial.print("pitch: ");
-    if (ppm[1] == pitch_center) {
+    if (ppm[1] == pitch_center)
+    {
       Serial.println("Center");
-    } else {
+    }
+    else
+    {
       sprintf(cgy, "%+5d", (ppm[1] - pitch_center));
       Serial.println(cgy);
     }
     Serial.print("yaw: ");
-    if (ppm[3] == yaw_center) {
+    if (ppm[3] == yaw_center)
+    {
       Serial.println("Center");
-    } else {
+    }
+    else
+    {
       sprintf(cgy, "%+5d", (ppm[3] - yaw_center));
       Serial.println(cgy);
     }
-  } else {
-    Serial.println("============================Must select debug mode in debug function (PC or BT)!!!!!============================");
-    Serial1.println("============================Must select debug mode in debug function (PC or BT)!!!!!============================");
   }
+  
 }
 
 // 來源:pixy範例hello_world
-int get_color_info(void )
+int get_color_info(void)
 {
   static int frames = 0;
   int j;
@@ -464,63 +526,68 @@ int get_color_info(void )
         //                Serial.print(buf);
         //                pixy.blocks[j].print();
         // 1是紅綠燈紅色,
-        if (pixy.blocks[j].signature == 1 || pixy.blocks[j].signature == 2) {
+        if (pixy.blocks[j].signature == 1 || pixy.blocks[j].signature == 2)
+        {
           c_idx = pixy.blocks[j].signature - 1;
           our_blocks[c_idx] += 1;
           center_x[c_idx] += pixy.blocks[j].x;
           center_y[c_idx] += pixy.blocks[j].y;
         }
       }
-      for (int k = 0; k < colors; k++) {
+      for (int k = 0; k < colors; k++)
+      {
         //        if (our_blocks[k] == 2) {
         center_x[k] = int(center_x[k] / our_blocks[k]);
         center_y[k] = int(center_y[k] / our_blocks[k]);
-        if (debug == "BT") {
+        if (debug == "BT")
+        {
           Serial1.println(String("") + "Color " + int(k + 1) + " Center:");
           Serial1.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
           Serial1.println("");
         }
-        else if (debug == "PC") {
+        else if (debug == "PC")
+        {
           Serial.println(String("") + "Color " + int(k + 1) + " Center:");
           Serial.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
           Serial.println("");
-        } else {
-          Serial.println("============================Must select debug mode in debug function (PC or BT)!!!!!============================");
-          Serial1.println("============================Must select debug mode in debug function (PC or BT)!!!!!============================");
         }
+ 
         return our_blocks[0];
       }
     }
   }
 }
 
-
-
 //====================================================PPM產生
-ISR(TIMER1_COMPA_vect) {
+ISR(TIMER1_COMPA_vect)
+{
   static boolean state = true;
 
   TCNT1 = 0;
 
-  if (state) {  //start pulse
+  if (state)
+  { //start pulse
     digitalWrite(sigPin, onState);
     OCR1A = PPM_PulseLen * 2;
     state = false;
   }
-  else {        //end pulse and calculate when to start the next pulse
+  else
+  { //end pulse and calculate when to start the next pulse
     static byte cur_chan_numb;
     static unsigned int calc_rest;
 
     digitalWrite(sigPin, !onState);
     state = true;
 
-    if (cur_chan_numb >= chanel_number) {
+    if (cur_chan_numb >= chanel_number)
+    {
       cur_chan_numb = 0;
-      calc_rest = calc_rest + PPM_PulseLen;//
+      calc_rest = calc_rest + PPM_PulseLen; //
       OCR1A = (PPM_FrLen - calc_rest) * 2;
       calc_rest = 0;
     }
-    else {
+    else
+    {
       OCR1A = (ppm[cur_chan_numb] - PPM_PulseLen) * 2;
       calc_rest = calc_rest + ppm[cur_chan_numb];
       cur_chan_numb++;
@@ -528,17 +595,19 @@ ISR(TIMER1_COMPA_vect) {
   }
 }
 
-
-void alt_pid(void) {
+void alt_pid(void)
+{
   error = set_d - sonar_cm;
   s += error;
   control = kp * error + ki * s + kd * (error - pre_e);
   pre_e = error;
   new_speed = int(n_speed + control);
-  if (new_speed >= 1470) {
+  if (new_speed >= 1470)
+  {
     new_speed = 1470;
   }
-  if (new_speed <= 1460) {
+  if (new_speed <= 1460)
+  {
     new_speed = 1460;
   }
   ppm[2] = new_speed;
