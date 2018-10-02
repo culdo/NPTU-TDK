@@ -17,10 +17,11 @@
 #define roll_center 1445  //好螺旋1460
 #define pitch_center 1420 //好螺旋1445
 #define yaw_center 1484
-#define debug "BT"
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
+
+#define debug "BT"
 
 // 定義連接藍牙模組的序列埠
 //SoftwareSerial BT(3, 12); // 接收腳, 傳送腳
@@ -117,12 +118,12 @@ void loop()
     if ((millis() - interval) > 400)
     {
       print_status();
-      get_color_info();
+//      get_color_info();
       interval = millis();
     }
   }
 
-  if (ppm[2] >= 1500 || is_error == true)
+  if (ppm[2] >= 1520 || is_error == true)
   {
     is_error = true;
     land_mode();
@@ -210,12 +211,12 @@ void mission_mode(void)
 
       if (is_sonic_fly == false)
       {
-        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 5))
+        if ((sonar_cm < 2) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
         {
           timer = millis();
           ppm_value += 2;
         }
-        else if (sonar_cm >= 75)
+        else if (sonar_cm >= 2)
         {
           is_sonic_fly = true;
         }
