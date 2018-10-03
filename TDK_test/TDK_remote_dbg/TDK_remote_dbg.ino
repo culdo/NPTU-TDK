@@ -21,7 +21,7 @@
 #include <Pixy.h>
 #define colors 2
 
-//debug選項: 0=關閉debug 'P'=電腦PC 'B'=藍芽Bluetooth
+//debug選項: false=關閉debug 'P'=電腦PC 'B'=藍芽Bluetooth
 #define debug 'B'
 
 // 定義連接藍牙模組的序列埠
@@ -115,7 +115,7 @@ void loop()
 {
 
 //每隔0.4秒藍芽發送紀錄
-#ifdef debug
+#if debug != false
   if ((millis() - interval) > 400)
   {
     print_status();
