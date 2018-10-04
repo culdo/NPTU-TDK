@@ -14,9 +14,9 @@
 #define ch4_pin 6
 #define ch7_pin 7
 #define MAX_DISTANCE 200
-#define roll_center 1445  //好螺旋1460
+#define roll_center 1455  //好螺旋1460,1445
 #define pitch_center 1420 //好螺旋1445
-#define yaw_center 1484
+#define yaw_center 1493//1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -65,9 +65,9 @@ float pre_e = 0;
 int set_d = 75;
 float error;
 float s = 0;
-float kp = 0.1;
+float kp = 0.1;//0.1
 float ki = 0;
-float kd = 0.2;
+float kd = 0.25;//0.2
 
 //int error_ppm=2555;
 
@@ -198,7 +198,7 @@ void mission_mode(void)
   else
   {
     now = millis();
-    if ((now - start) <= 5000)
+    if ((now - start) <= 5000)//5000
     {
       ppm[0] = roll_center;  //1500,1460
       ppm[1] = pitch_center; //1435,1450
@@ -630,9 +630,9 @@ void alt_pid(void)
   control = kp * error + ki * s + kd * (error - pre_e);
   pre_e = error;
   new_speed = int(n_speed + control);
-  if (new_speed >= 1485)
+  if (new_speed >= 1487)
   {
-    new_speed = 1485;
+    new_speed = 1487;
   }
   if (new_speed <= 1475)
   {
