@@ -14,9 +14,9 @@
 #define ch4_pin 6
 #define ch7_pin 7
 #define MAX_DISTANCE 200
-#define roll_center 1455  //好螺旋1460,1445
-#define pitch_center 1420 //好螺旋1445
-#define yaw_center 1493//1484
+#define roll_center 1462  //好螺旋1460,1445
+#define pitch_center 1417 //好螺旋1445
+#define yaw_center 1494//1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -43,6 +43,7 @@ bool is_sonic_fly = false;
 bool is_get_red = false;
 bool is_error = false;
 bool is_high = false;
+bool open_pid = false;
 //bool switched = false;
 
 //////////////////////////////////////////////////////////////////
@@ -59,22 +60,22 @@ char garbage[4];
 int openmv;
 int c = 0;
 float control;
-float n_speed = 1480;
+float n_speed = 1485;
 int new_speed;
 float pre_e = 0;
 int set_d = 75;
 float error;
 float s = 0;
-float kp = 0.1;//0.1
+float kp = 0.15;//0.1
 float ki = 0;
-float kd = 0.25;//0.2
+float kd = 0.3;//0.3
 
 //int error_ppm=2555;
 
 void setup()
 {
-//initiallize default ppm values
-// 設為115200平滑接收監控訊息
+  //initiallize default ppm values
+  // 設為115200平滑接收監控訊息
 #if debug == 'B'
   Serial1.begin(115200);
 #elif debug == 'P'
@@ -114,7 +115,7 @@ void setup()
 void loop()
 {
 
-//每隔0.4秒藍芽發送紀錄
+  //每隔0.4秒藍芽發送紀錄
 #if debug != false
   if ((millis() - interval) > 400)
   {
@@ -162,6 +163,7 @@ void rc_mode(void)
   is_land = false;
   is_sonic_fly = false;
   is_get_red = false;
+  open_pid = false;
   //  is_error = false;
   int yaw;
   // 解鎖
@@ -207,6 +209,8 @@ void mission_mode(void)
     }
     else
     {
+      is_sonic_fly = true;
+
       if ((millis() - before) >= 1000)
       {
         buf = sonar.ping_cm();
@@ -216,12 +220,20 @@ void mission_mode(void)
         }
         before = millis();
       }
-      ppm[2] = ppm_value; //1440
-      alt_pid();
-      if (is_sonic_fly == false)
-      {
-        is_sonic_fly = true;
+      //        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
+      //        {
+      //          timer = millis();
+      //          ppm_value += 2;
+      //        }
+      if (sonar_cm >= 50) {
+        open_pid = true;
       }
+      if (open_pid == true) {
+        alt_pid();
+      }
+      ppm[2] = ppm_value; //1440
+
+      //      }
       // if (sonar_cm > 75 || is_high == true)
       // {
       //   is_high = true;
@@ -334,7 +346,7 @@ void land_mode(void)
   is_sonic_fly = false;
   //  is_takeoff = false;
   is_get_red = false;
-
+  open_pid = false;
   if (is_land == false)
   {
     ppm[0] = roll_center;
@@ -630,13 +642,13 @@ void alt_pid(void)
   control = kp * error + ki * s + kd * (error - pre_e);
   pre_e = error;
   new_speed = int(n_speed + control);
-  if (new_speed >= 1487)
+  if (new_speed >= 1490)
   {
-    new_speed = 1487;
+    new_speed = 1490;
   }
-  if (new_speed <= 1475)
+  if (new_speed <= 1480)
   {
-    new_speed = 1475;
+    new_speed = 1480;
   }
   ppm_value = new_speed;
 }
