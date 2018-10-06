@@ -234,26 +234,27 @@ void mission_mode(void)
       if (open_pid == true) {
         alt_pid();
         //        //        openmv
-//        if (millis() - before_op <= 1000) {
-          if (Serial2.available() > 0) {
-            //            Serial.println("message");
-            if (Serial2.read() == '\n') {
-              Serial2.readBytes(cmd, 4);
-              Serial.println(cmd);
-            }
-            //        }
-            //        Serial1.readBytes(garbage, 10);
-            //         ppm[1] = pitch_center;
-            ppm[3] = atoi(cmd);
+        //        if (millis() - before_op <= 1000) {
+        if (Serial2.available() > 0) {
+          //            Serial.println("message");
+          if (Serial2.read() == '\n') {
+            Serial2.readBytes(cmd, 4);
+            Serial.println(cmd);
           }
-//        }
-//        else if (millis() - before_op <= 2000) {
-//          ppm[3] = yaw_center;
-//          ppm[1] = pitch_center - 10;
-//        }
-//        else {
-//          before_op = millis();
-//        }
+          //        }
+          //        Serial1.readBytes(garbage, 10);
+          //         ppm[1] = pitch_center;
+          if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
+            ppm[3] = atoi(cmd);
+        }
+        //        }
+        //        else if (millis() - before_op <= 2000) {
+        //          ppm[3] = yaw_center;
+        //          ppm[1] = pitch_center - 10;
+        //        }
+        //        else {
+        //          before_op = millis();
+        //        }
       }
       ppm[2] = ppm_value; //1440
 
