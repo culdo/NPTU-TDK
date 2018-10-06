@@ -22,7 +22,7 @@
 #define colors 2
 
 //debug選項: false=關閉debug 'P'=電腦PC 'B'=藍芽Bluetooth
-#define debug 'P'
+#define debug 'B'
 
 // 定義連接藍牙模組的序列埠
 //SoftwareSerial 'B'(3, 12); // 接收腳, 傳送腳
@@ -60,16 +60,18 @@ char garbage[4];
 int openmv;
 int c = 0;
 float control;
-float n_speed = 1485;
+float n_speed = 1484;
 int new_speed;
 float pre_e = 0;
 int set_d = 75;
 float error;
 float s = 0;
-float kp = 0.15;//0.1
+float kp = 0.12;//0.1
 float ki = 0;
-float kd = 0.3;//0.3
-
+float kd = 0.2;//0.3
+//float kp1= 0.15;//0.1
+//float ki1 = 0;
+//float kd1 = 0.2;//0.3
 //int error_ppm=2555;
 
 void setup()
@@ -226,45 +228,32 @@ void mission_mode(void)
       //          timer = millis();
       //          ppm_value += 2;
       //        }
-      if (sonar_cm >= 50) {
+      if (sonar_cm >= 50 && open_pid == false) {
         open_pid = true;
       }
       if (open_pid == true) {
         alt_pid();
-        if (!is_get_red)
-        {
-          if (millis() - before_op <= 1000) {
-            if (Serial2.available() > 0) {
-              //            Serial.println("message");
-              if (Serial2.read() == '\n') {
-                Serial2.readBytes(cmd, 4);
-                Serial.println(cmd);
-              }
-              //        }
-              //        Serial1.readBytes(garbage, 10);
-              ppm[1] = pitch_center;
-              ppm[3] = atoi(cmd);
+        //        //        openmv
+//        if (millis() - before_op <= 1000) {
+          if (Serial2.available() > 0) {
+            //            Serial.println("message");
+            if (Serial2.read() == '\n') {
+              Serial2.readBytes(cmd, 4);
+              Serial.println(cmd);
             }
+            //        }
+            //        Serial1.readBytes(garbage, 10);
+            //         ppm[1] = pitch_center;
+            ppm[3] = atoi(cmd);
           }
-          else if (millis() - before_op <= 2000) {
-            ppm[3] = yaw_center;
-            ppm[1] = pitch_center - 10;
-          }
-          else {
-            before_op = millis();
-          }
-//          is_get_red = get_color_info();
-          //往前ppm = 中心ppm - 差值
+//        }
+//        else if (millis() - before_op <= 2000) {
+//          ppm[3] = yaw_center;
 //          ppm[1] = pitch_center - 10;
-        }
-        else
-        {
-           is_get_red = get_color_info();
-//                    ppm[1] = pitch_center;
-          //        //        openmv
-          
-        }
-
+//        }
+//        else {
+//          before_op = millis();
+//        }
       }
       ppm[2] = ppm_value; //1440
 
@@ -481,8 +470,8 @@ void print_status()
     Serial.println((now - start) / 1000);
     Serial.print("cm: ");
     Serial.println(sonar_cm);
-//    Serial.println(now);
-//    Serial.println(before_op);
+    //          Serial.println(now);
+    //          Serial.println(before_op);
     //      Serial.println(start);
   }
   else
@@ -638,9 +627,9 @@ void alt_pid(void)
   control = kp * error + ki * s + kd * (error - pre_e);
   pre_e = error;
   new_speed = int(n_speed + control);
-  if (new_speed >= 1490)
+  if (new_speed >= 1488)
   {
-    new_speed = 1490;
+    new_speed = 1488;
   }
   if (new_speed <= 1480)
   {
