@@ -75,6 +75,8 @@ void setup()
 {
   //initiallize default ppm values
   // 設為115200平滑接收監控訊息
+  
+  //連接OpenMV序列埠
   Serial2.begin(115200);
 #if debug == 'B'
   Serial1.begin(115200);
@@ -581,7 +583,7 @@ int get_color_info(void)
   }
 }
 
-//====================================================PPM產生
+//========================PPM產生============================
 ISR(TIMER1_COMPA_vect)
 {
   static boolean state = true;
