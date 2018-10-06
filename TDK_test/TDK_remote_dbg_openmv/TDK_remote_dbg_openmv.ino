@@ -21,11 +21,10 @@
 #include <Pixy.h>
 #define colors 2
 
-//debug選項: false=關閉debug 'P'=電腦PC 'B'=藍芽Bluetooth
+//監控選項: false=關閉 'P'=電腦PC 'B'=藍芽Bluetooth
 #define debug 'P'
 
-// 定義連接藍牙模組的序列埠
-//SoftwareSerial 'B'(3, 12); // 接收腳, 傳送腳
+// mega板藍牙序列埠為Serial1(tx, rx)
 char val; // 儲存接收資料的變數
 
 //#define debug false
@@ -395,8 +394,8 @@ void land_mode(void)
 }
 void print_status()
 {
-  // ==========================只能選擇一種debug方式其他Serial請comment掉!!!==========================
   char cgy[10];
+// 使用藍芽監控
 #if debug == 'B'
   //    Serial1.print("ERROR_MODE_PPM: ");
   //    Serial1.println(error_ppm);
@@ -455,6 +454,7 @@ void print_status()
     sprintf(cgy, "%+5d", (ppm[3] - yaw_center));
     Serial1.println(cgy);
   }
+// 使用電腦監控
 #elif debug == 'P'
 
   if (ppm[4] < 1300)
