@@ -20,7 +20,7 @@ kd=0.05
 uart = UART(3, 115200)
 uart.init(115200, bits=8, parity=None, stop=1) # init with given parameters
 # Tracks a black line. Use [(128, 255)] for a tracking a white line.
-GRAYSCALE_THRESHOLD = [(0, 90)]
+GRAYSCALE_THRESHOLD = [(0, 70)]
 
 # Each roi is (x, y, w, h). The line detection algorithm will try to find the
 # centroid of the largest blob in each roi. The x position of the centroids
@@ -107,7 +107,7 @@ while(True):
     Error=deflection_angle
     Derivative=Error-PreErr
     Control=int(kp*Error+kd*Derivative)
-    yaw=1494-Control
+    yaw=1495-Control
     PreErr=Error
         #uart.write("%d\n" % yaw)
         #print("yaw=%d\nangle=%d" % (yaw, deflection_angle))

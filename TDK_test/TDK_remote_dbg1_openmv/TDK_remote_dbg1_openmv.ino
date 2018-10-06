@@ -15,8 +15,8 @@
 #define ch7_pin 7
 #define MAX_DISTANCE 200
 #define roll_center 1462  //好螺旋1460,1445
-#define pitch_center 1417 //好螺旋1445
-#define yaw_center 1494//1484
+#define pitch_center 1422 //好螺旋1419
+#define yaw_center 1495//1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -199,131 +199,132 @@ void mission_mode(void)
     is_takeoff = true;
     // ppm_value = 1455;
     ppm_value = 1480;
+    ppm[0] = roll_center;  //1500,1460
+    ppm[1] = pitch_center; //1435,1450
+    ppm[3] = yaw_center;
   }
   else
   {
-    now = millis();
-    if ((now - start) <= 5000)//5000
-    {
-      ppm[0] = roll_center;  //1500,1460
-      ppm[1] = pitch_center; //1435,1450
-      ppm[2] = 1420;         //1465
-      ppm[3] = yaw_center;   //1500
-    }
-    else
-    {
-      is_sonic_fly = true;
+        now = millis();
+    //    if ((now - start) <= 5000)//5000
+    //    {
+    //      ppm[0] = roll_center;  //1500,1460
+    //      ppm[1] = pitch_center; //1435,1450
+    //      ppm[2] = 1420;         //1465
+    //      ppm[3] = yaw_center;   //1500
+    //    }
+    //    else
+    //    {
+    is_sonic_fly = true;
 
-      if ((millis() - before) >= 1000)
+    if ((millis() - before) >= 1000)
+    {
+      buf = sonar.ping_cm();
+      if (buf > 15)
       {
-        buf = sonar.ping_cm();
-        if (buf > 15)
-        {
-          sonar_cm = buf;
-        }
-        before = millis();
+        sonar_cm = buf;
       }
-      //        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
-      //        {
-      //          timer = millis();
-      //          ppm_value += 2;
+      before = millis();
+    }
+    //        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
+    //        {
+    //          timer = millis();
+    //          ppm_value += 2;
+    //        }
+    if (sonar_cm >= 50 && open_pid == false) {
+      open_pid = true;
+    }
+    if (open_pid == true) {
+      alt_pid();
+      //        //        openmv
+      //        if (millis() - before_op <= 1000) {
+      //openmv-pid============================
+//      if (Serial2.available() > 0) {
+//        if (Serial2.read() == '\n') {
+//          Serial2.readBytes(cmd, 4);
+////          Serial.println(cmd);
+//        }
+//        if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
+//          ppm[3] = atoi(cmd);
+//      }
+      //============================
       //        }
-      if (sonar_cm >= 50 && open_pid == false) {
-        open_pid = true;
-      }
-      if (open_pid == true) {
-        alt_pid();
-        //        //        openmv
-        //        if (millis() - before_op <= 1000) {
-        if (Serial2.available() > 0) {
-          //            Serial.println("message");
-          if (Serial2.read() == '\n') {
-            Serial2.readBytes(cmd, 4);
-            Serial.println(cmd);
-          }
-          //        }
-          //        Serial1.readBytes(garbage, 10);
-          //         ppm[1] = pitch_center;
-          if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
-            ppm[3] = atoi(cmd);
-        }
-        //        }
-        //        else if (millis() - before_op <= 2000) {
-        //          ppm[3] = yaw_center;
-        //          ppm[1] = pitch_center - 10;
-        //        }
-        //        else {
-        //          before_op = millis();
-        //        }
-      }
-      ppm[2] = ppm_value; //1440
-
-      //      }
-      // if (sonar_cm > 75 || is_high == true)
-      // {
-      //   is_high = true;
-
-      //   if (is_sonic_fly == false)
-      //   {
-      //     if ((sonar_cm > 75) && ((millis() - timer) >= 1000))
-      //     {
-      //       timer = millis();
-      //       ppm_value -= 2;
-      //     }
-      //     else if (sonar_cm <= 75)
-      //     {
-      //       is_sonic_fly = true;
-      //     }
-      //   }
-      // if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
-      // {
-      //   timer = millis();
-      //   ppm_value += 2;
-      // }
-      // else if (sonar_cm >= 75)
-      // {
-      //   is_sonic_fly = true;
-      // }
-      // }
-      //      else
-      //      {
-      //        if (!is_get_red)
-      //        {
-      //          is_get_red = get_color_info();
-      //          //往前ppm = 中心ppm - 差值
+      //        else if (millis() - before_op <= 2000) {
+      //          ppm[3] = yaw_center;
       //          ppm[1] = pitch_center - 10;
       //        }
-      //        else
-      //        {
-      //          ppm[1] = pitch_center;
+      //        else {
+      //          before_op = millis();
       //        }
-      //      }
-
-
     }
+    ppm[2] = ppm_value; //1440
 
-    //      else {
-    //        //        openmv
-    //        if (millis() - before <= 500) {
-    //          if (Serial1.available() > 0) {
-    //            if (Serial1.read() == '\n') {
-    //              Serial1.readBytes(cmd, 4);
-    //            }
-    //            //        }
-    //            //        Serial1.readBytes(garbage, 10);
-    //            ppm[1] = pitch_center;
-    //            ppm[3] = atoi(cmd);
-    //          }
-    //        }
-    //        else if (millis() - before <= 1500) {
-    //          ppm[3] = yaw_center;
+    //      }
+    // if (sonar_cm > 75 || is_high == true)
+    // {
+    //   is_high = true;
+
+    //   if (is_sonic_fly == false)
+    //   {
+    //     if ((sonar_cm > 75) && ((millis() - timer) >= 1000))
+    //     {
+    //       timer = millis();
+    //       ppm_value -= 2;
+    //     }
+    //     else if (sonar_cm <= 75)
+    //     {
+    //       is_sonic_fly = true;
+    //     }
+    //   }
+    // if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
+    // {
+    //   timer = millis();
+    //   ppm_value += 2;
+    // }
+    // else if (sonar_cm >= 75)
+    // {
+    //   is_sonic_fly = true;
+    // }
+    // }
+    //      else
+    //      {
+    //        if (!is_get_red)
+    //        {
+    //          is_get_red = get_color_info();
+    //          //往前ppm = 中心ppm - 差值
     //          ppm[1] = pitch_center - 10;
     //        }
-    //        else {
-    //          before = millis();
+    //        else
+    //        {
+    //          ppm[1] = pitch_center;
     //        }
     //      }
+
+
   }
+
+  //      else {
+  //        //        openmv
+  //        if (millis() - before <= 500) {
+  //          if (Serial1.available() > 0) {
+  //            if (Serial1.read() == '\n') {
+  //              Serial1.readBytes(cmd, 4);
+  //            }
+  //            //        }
+  //            //        Serial1.readBytes(garbage, 10);
+  //            ppm[1] = pitch_center;
+  //            ppm[3] = atoi(cmd);
+  //          }
+  //        }
+  //        else if (millis() - before <= 1500) {
+  //          ppm[3] = yaw_center;
+  //          ppm[1] = pitch_center - 10;
+  //        }
+  //        else {
+  //          before = millis();
+  //        }
+  //      }
+
 }
 
 void land_mode(void)
@@ -334,6 +335,7 @@ void land_mode(void)
   open_pid = false;
   if (is_land == false)
   {
+    before = 0;
     ppm[0] = roll_center;
     ppm[1] = pitch_center;
     ppm[2] = ppm_value; //1480;//1450
