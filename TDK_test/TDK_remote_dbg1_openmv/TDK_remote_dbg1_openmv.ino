@@ -66,10 +66,10 @@ float pre_e = 0;
 int set_d = 75;
 float error;
 float s = 0;
-float kp = 0.15;//0.1
+float kp = 0.16;//0.1
 float ki = 0;
 float kd = 0.4;//0.25
-//float kp1= 0.15;//0.1
+//float kp1= 0.1;//0.1
 //float ki1 = 0;
 //float kd1 = 0.2;//0.3
 //int error_ppm=2555;
@@ -205,7 +205,7 @@ void mission_mode(void)
   }
   else
   {
-        now = millis();
+    now = millis();
     //    if ((now - start) <= 5000)//5000
     //    {
     //      ppm[0] = roll_center;  //1500,1460
@@ -239,14 +239,14 @@ void mission_mode(void)
       //        //        openmv
       //        if (millis() - before_op <= 1000) {
       //openmv-pid============================
-//      if (Serial2.available() > 0) {
-//        if (Serial2.read() == '\n') {
-//          Serial2.readBytes(cmd, 4);
-////          Serial.println(cmd);
-//        }
-//        if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
-//          ppm[3] = atoi(cmd);
-//      }
+      if (Serial2.available() > 0) {
+        if (Serial2.read() == '\n') {
+          Serial2.readBytes(cmd, 4);
+          //          Serial.println(cmd);
+        }
+        if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
+          ppm[0] = atoi(cmd);
+      }
       //============================
       //        }
       //        else if (millis() - before_op <= 2000) {
