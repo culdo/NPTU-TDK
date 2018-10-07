@@ -14,9 +14,9 @@
 #define ch4_pin 6
 #define ch7_pin 7
 #define MAX_DISTANCE 200
-#define roll_center 1462  //好螺旋1460,1445
-#define pitch_center 1422 //好螺旋1419
-#define yaw_center 1480//1484
+#define roll_center 1455  //好螺旋1462
+#define pitch_center 1420 //好螺旋1419,1422
+#define yaw_center 1485//1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -66,9 +66,9 @@ float pre_e = 0;
 int set_d = 75;
 float error;
 float s = 0;
-float kp = 0.15;//0.1
+float kp = 0.13;//0.1
 float ki = 0;
-float kd = 0.3;//0.25
+float kd = 0.35;//0.25
 //float kp1= 0.15;//0.1
 //float ki1 = 0;
 //float kd1 = 0.2;//0.3
