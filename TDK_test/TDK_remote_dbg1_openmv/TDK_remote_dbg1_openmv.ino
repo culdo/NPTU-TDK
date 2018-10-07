@@ -14,9 +14,9 @@
 #define ch4_pin 6
 #define ch7_pin 7
 #define MAX_DISTANCE 200
-#define roll_center 1460  //好螺旋1462
-#define pitch_center 1415 //好螺旋1419,1422
-#define yaw_center 1494//1485
+#define roll_center 1464  //好螺旋1462
+#define pitch_center 1417 //好螺旋1419,1422
+#define yaw_center 1495//1494
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -68,7 +68,7 @@ float error;
 float s = 0;
 float kp = 0.13;//0.1
 float ki = 0;
-float kd = 0.42;//0.25
+float kd = 0.4;//0.25
 //float kp1= 0.15;//0.1
 //float ki1 = 0;
 //float kd1 = 0.2;//0.3
