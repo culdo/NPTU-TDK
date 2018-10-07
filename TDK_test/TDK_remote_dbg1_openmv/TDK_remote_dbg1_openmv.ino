@@ -68,7 +68,7 @@ float error;
 float s = 0;
 float kp = 0.13;//0.1
 float ki = 0;
-float kd = 0.4;//0.25
+float kd = 0.42;//0.25
 //float kp1= 0.15;//0.1
 //float ki1 = 0;
 //float kd1 = 0.2;//0.3
@@ -198,7 +198,7 @@ void mission_mode(void)
     start = millis();
     is_takeoff = true;
     // ppm_value = 1455;
-    ppm_value = 1480;
+    ppm_value = 1478;
     ppm[0] = roll_center;  //1500,1460
     ppm[1] = pitch_center; //1435,1450
     ppm[3] = yaw_center;
@@ -634,9 +634,9 @@ void alt_pid(void)
   {
     new_speed = 1487;
   }
-  if (new_speed <= 1480)
+  if (new_speed <= 1478)
   {
-    new_speed = 1480;
+    new_speed = 1478;
   }
   ppm_value = new_speed;
 }
