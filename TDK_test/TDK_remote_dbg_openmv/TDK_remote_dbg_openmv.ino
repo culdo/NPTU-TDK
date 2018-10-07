@@ -33,7 +33,7 @@ Pixy pixy;
 unsigned long now;
 unsigned long start, timer, before, before_op = 0;
 unsigned long interval = 0;
-bool is_takeoff? = false;
+bool is_takeoff = false;
 bool is_land = false;
 bool is_sonic_fly = false;
 bool is_get_red = false;
@@ -153,7 +153,7 @@ void loop()
 
 void rc_mode(void)
 {
-  is_takeoff? = false;
+  is_takeoff = false;
   is_land = false;
   is_sonic_fly = false;
   is_get_red = false;
@@ -184,10 +184,10 @@ void mission_mode(void)
 {
   unsigned long buf;
   is_land = false;
-  if (is_takeoff? == false)
+  if (is_takeoff == false)
   {
     start = millis();
-    is_takeoff? = true;
+    is_takeoff = true;
     // ppm_value = 1455;
     ppm_value = 1480;
   }
@@ -332,7 +332,7 @@ void mission_mode(void)
 void land_mode(void)
 {
   is_sonic_fly = false;
-  //  is_takeoff? = false;
+  //  is_takeoff = false;
   is_get_red = false;
   open_pid = false;
   if (is_land == false)
