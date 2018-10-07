@@ -17,39 +17,30 @@
 #define roll_center 1462  //好螺旋1460,1445
 #define pitch_center 1417 //好螺旋1445
 #define yaw_center 1494//1484
-//#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
 
-//debug選項: false=關閉debug 'P'=電腦PC 'B'=藍芽Bluetooth
+//監控選項: false=關閉 'P'=電腦PC 'B'=藍芽Bluetooth
 #define debug 'P'
 
-// 定義連接藍牙模組的序列埠
-//SoftwareSerial 'B'(3, 12); // 接收腳, 傳送腳
+// mega板藍牙序列埠為Serial1(tx, rx)
 char val; // 儲存接收資料的變數
 
-//#define debug false
-
 NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
-// This is the main Pixy object
+// 新增一個pixy實例
 Pixy pixy;
 
 unsigned long now;
 unsigned long start, timer, before, before_op = 0;
 unsigned long interval = 0;
-bool is_takeoff = false;
+bool is_takeoff? = false;
 bool is_land = false;
 bool is_sonic_fly = false;
 bool is_get_red = false;
 bool is_error = false;
 bool is_high = false;
 bool open_pid = false;
-//bool switched = false;
 
-//////////////////////////////////////////////////////////////////
-//int ppm[4];
-/*this array holds the servo values for the ppm signal
-  change theese values in your code (usually servo values move between 1000 and 2000)*/
 int ppm[chanel_number];
 int ppm_value;
 int updated_times = 0;
@@ -58,6 +49,7 @@ int sonar_cm = 0;
 char cmd[4];
 char garbage[4];
 int openmv;
+//PID
 int c = 0;
 float control;
 float n_speed = 1485;
@@ -74,8 +66,9 @@ float kd = 0.3;//0.3
 
 void setup()
 {
-  //initiallize default ppm values
   // 設為115200平滑接收監控訊息
+
+  //連接OpenMV序列埠
   Serial2.begin(115200);
 #if debug == 'B'
   Serial1.begin(115200);
@@ -112,7 +105,7 @@ void setup()
   pixy.init();
 }
 
-//==========================================================主程式
+//=====================主程式=====================
 void loop()
 {
 
@@ -160,7 +153,7 @@ void loop()
 
 void rc_mode(void)
 {
-  is_takeoff = false;
+  is_takeoff? = false;
   is_land = false;
   is_sonic_fly = false;
   is_get_red = false;
@@ -191,10 +184,10 @@ void mission_mode(void)
 {
   unsigned long buf;
   is_land = false;
-  if (is_takeoff == false)
+  if (is_takeoff? == false)
   {
     start = millis();
-    is_takeoff = true;
+    is_takeoff? = true;
     // ppm_value = 1455;
     ppm_value = 1480;
   }
@@ -339,7 +332,7 @@ void mission_mode(void)
 void land_mode(void)
 {
   is_sonic_fly = false;
-  //  is_takeoff = false;
+  //  is_takeoff? = false;
   is_get_red = false;
   open_pid = false;
   if (is_land == false)
@@ -375,41 +368,12 @@ void land_mode(void)
     {
       is_sonic_fly = false;
     }
-    //    if (now - start <= 2000) {
-    //      ppm[0] = roll_center;
-    //      ppm[1] = pitch_center;
-    //      ppm[2] = 1460;//1450
-    //      ppm[3] = yaw_center;
-    //      ppm[4] = 1800;
-    //    }
-    //    else if ( now - start <= 3000 ) {
-    //      ppm[0] = roll_center;
-    //      ppm[1] = pitch_center;
-    //      ppm[2] = 1455;//1250
-    //      ppm[3] = yaw_center;
-    //      //        ppm[4] = 1800;
-    //    }
-    //    else if (now - start <= 4000 ) {
-    //      ppm[0] = roll_center;
-    //      ppm[1] = pitch_center;
-    //      ppm[2] = 1450;//1250
-    //      ppm[3] = yaw_center;
-    //      //        ppm[4] = 1800;
-    //    }
-    //    else {
-    //      ppm[0] = 1470;
-    //      ppm[1] = 1900;
-    //      ppm[2] = 1000;
-    //      ppm[3] = 1000;
-    //      ppm[4] = 1800;
-    //    }
-    //  }
   }
 }
 void print_status()
 {
-  // ==========================只能選擇一種debug方式其他Serial請comment掉!!!==========================
   char cgy[10];
+// 使用藍芽監控
 #if debug == 'B'
   //    Serial1.print("ERROR_MODE_PPM: ");
   //    Serial1.println(error_ppm);
@@ -468,6 +432,7 @@ void print_status()
     sprintf(cgy, "%+5d", (ppm[3] - yaw_center));
     Serial1.println(cgy);
   }
+// 使用電腦監控
 #elif debug == 'P'
 
   if (ppm[4] < 1300)
@@ -543,28 +508,20 @@ int get_color_info(void)
   int our_blocks[colors] = {0};
   int c_idx;
 
-  // grab blocks!
+  // 抓Blocks
   blocks = pixy.getBlocks();
 
-  // If there are detect blocks, print them!
+  // 如果有blocks才進去處理
   if (blocks)
   {
     frames++;
 
-    // do this (print) every 50 frames because printing every
-    // frame would bog down the Arduino
+    // 每一幀抓一次pixy的block
     if (frames % 1 == 0)
     {
-      //            sprintf(buf, "Detected %d:\n", blocks);
-      //      Serial1.print(buf);
-      //            Serial.print(buf);
       for (j = 0; j < blocks; j++)
       {
-        //                sprintf(buf, "  block %d: ", j);
-        //        Serial1.print(buf);
-        //                Serial.print(buf);
-        //                pixy.blocks[j].print();
-        // 1是紅綠燈紅色,
+        // 1是紅綠燈紅,2是同心圓黃
         if (pixy.blocks[j].signature == 1 || pixy.blocks[j].signature == 2)
         {
           c_idx = pixy.blocks[j].signature - 1;
@@ -594,7 +551,7 @@ int get_color_info(void)
   }
 }
 
-//====================================================PPM產生
+//========================PPM產生============================
 ISR(TIMER1_COMPA_vect)
 {
   static boolean state = true;
