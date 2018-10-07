@@ -16,7 +16,7 @@
 #define MAX_DISTANCE 200
 #define roll_center 1462  //好螺旋1460,1445
 #define pitch_center 1422 //好螺旋1419
-#define yaw_center 1495//1484
+#define yaw_center 1480//1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -60,15 +60,15 @@ char garbage[4];
 int openmv;
 int c = 0;
 float control;
-float n_speed = 1484;
+float n_speed = 1482;//1484
 int new_speed;
 float pre_e = 0;
 int set_d = 75;
 float error;
 float s = 0;
-float kp = 0.12;//0.1
+float kp = 0.15;//0.1
 float ki = 0;
-float kd = 0.2;//0.3
+float kd = 0.3;//0.25
 //float kp1= 0.15;//0.1
 //float ki1 = 0;
 //float kd1 = 0.2;//0.3
@@ -630,9 +630,9 @@ void alt_pid(void)
   control = kp * error + ki * s + kd * (error - pre_e);
   pre_e = error;
   new_speed = int(n_speed + control);
-  if (new_speed >= 1488)
+  if (new_speed >= 1487)
   {
-    new_speed = 1488;
+    new_speed = 1487;
   }
   if (new_speed <= 1480)
   {
