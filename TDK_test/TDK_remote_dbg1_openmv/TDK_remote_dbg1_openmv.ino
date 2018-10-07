@@ -15,7 +15,7 @@
 #define ch7_pin 7
 #define MAX_DISTANCE 200
 #define roll_center 1465  //好螺旋1462
-#define pitch_center 1416 //好螺旋1419,1422
+#define pitch_center 1410 //好螺旋1419,1422
 #define yaw_center 1494//1494
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
@@ -226,6 +226,16 @@ void mission_mode(void)
       }
       before = millis();
     }
+    //openmv-pid============================
+    if (Serial2.available() > 0) {
+      if (Serial2.read() == '\n') {
+        Serial2.readBytes(cmd, 4);
+        //          Serial.println(cmd);
+      }
+      if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
+        ppm[0] = atoi(cmd);
+    }
+    //============================
     //        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
     //        {
     //          timer = millis();
@@ -238,16 +248,7 @@ void mission_mode(void)
       alt_pid();
       //        //        openmv
       //        if (millis() - before_op <= 1000) {
-      //openmv-pid============================
-      if (Serial2.available() > 0) {
-        if (Serial2.read() == '\n') {
-          Serial2.readBytes(cmd, 4);
-          //          Serial.println(cmd);
-        }
-        if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
-          ppm[0] = atoi(cmd);
-      }
-      //============================
+
       //        }
       //        else if (millis() - before_op <= 2000) {
       //          ppm[3] = yaw_center;

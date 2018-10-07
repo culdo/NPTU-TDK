@@ -86,18 +86,18 @@ while(True):
     # the line farther away from the robot for a better prediction.
     #print("Turn Angle: %f" % deflection_angle)
     if (center_pos>=30) and (center_pos<= 60):#Direction and angle setting
-        roll=1462
+        roll=1460
 
     elif  center_pos<30:
-        roll=1460
+        roll=1455
 
         #uart.write("B")
     elif (center_pos >=100) and  (center_pos<=130):
-        roll=1467
+        roll=1470
 
         #uart.write("C")
     elif center_pos>130:
-        roll=1470
+        roll=1475
 
         #uart.write("D")
     else:
