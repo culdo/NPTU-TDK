@@ -89,7 +89,7 @@ while(True):
         yaw=1492
 
     elif  deflection_angle>25:
-        yaw=1484
+        yaw=1489
 
         #uart.write("B")
     elif (deflection_angle <=-10) and  (deflection_angle>=-25):
