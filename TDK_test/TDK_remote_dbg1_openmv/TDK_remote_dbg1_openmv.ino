@@ -14,8 +14,8 @@
 #define ch4_pin 6
 #define ch7_pin 7
 #define MAX_DISTANCE 200
-#define roll_center 1465  //好螺旋1462
-#define pitch_center 1380 //好螺旋1419,1422,1410
+#define roll_center 1466  //好螺旋1462,1465
+#define pitch_center 1405 //好螺旋1419,1422,1410
 #define yaw_center 1494//1494
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
