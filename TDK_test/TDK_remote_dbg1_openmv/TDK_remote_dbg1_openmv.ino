@@ -14,9 +14,9 @@
 #define ch4_pin 6
 #define ch7_pin 7
 #define MAX_DISTANCE 200
-#define roll_center 1485  //好螺旋1462,1475
-#define pitch_center 1405 //好螺旋1419,1422,1410
-#define yaw_center 1494//1494
+#define roll_center 1462  //好螺旋1462,1485
+#define pitch_center 1450 //好螺旋1419,1447
+#define yaw_center 1484//1494,1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -175,7 +175,7 @@ void rc_mode(void)
     if ((pulseIn(ch4_pin, HIGH)) > 1900)
     {
       start = millis();
-      ppm[3] = 1910;
+      ppm[3] = 1950;
     }
     else
     {
@@ -198,7 +198,7 @@ void mission_mode(void)
     start = millis();
     is_takeoff = true;
     // ppm_value = 1455;
-    ppm_value = 1478;
+    ppm_value = 1475;
     ppm[0] = roll_center;  //1500,1460
     ppm[1] = pitch_center; //1435,1450
     ppm[3] = yaw_center;
@@ -227,14 +227,14 @@ void mission_mode(void)
       before = millis();
     }
     //openmv-pid============================
-    if (Serial2.available() > 0) {
-      if (Serial2.read() == '\n') {
-        Serial2.readBytes(cmd, 4);
-        //          Serial.println(cmd);
-      }
-      if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
-        ppm[0] = atoi(cmd);
-    }
+//    if (Serial2.available() > 0) {
+//      if (Serial2.read() == '\n') {
+//        Serial2.readBytes(cmd, 4);
+//        //          Serial.println(cmd);
+//      }
+//      if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
+//        ppm[0] = atoi(cmd);
+//    }
     //============================
     //        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
     //        {
