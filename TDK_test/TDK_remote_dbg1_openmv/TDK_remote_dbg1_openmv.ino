@@ -4,7 +4,7 @@
 #define default_servo_value 1000 //set the default servo value
 #define PPM_FrLen 22500          //set the PPM frame length in microseconds (1ms = 1000µs)
 #define PPM_PulseLen 300         //set the pulse length
-#define onState 1                //set polarity of the pulses: 1 is positive, 0 is negative*-+
+#define onState 1                //set polarity of the pulses: 1 is positive, 0 is negative
 #define sigPin 2                 //set PPM signal output pin on the arduino
 #define TRIG_PIN 13
 #define ECHO_PIN 12
@@ -15,8 +15,9 @@
 #define ch7_pin 7
 #define MAX_DISTANCE 200
 #define roll_center 1462  //好螺旋1462,1485
-#define pitch_center 1440 //好螺旋1419,1447
-#define yaw_center 1484//1494,1484
+#define pitch_forward 1440 //好螺旋1419,1447
+#define pitch_center 1447
+#define yaw_center 1484   //1494,1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -51,6 +52,7 @@ bool is_get_red = false;
 bool is_error = false;
 bool is_high = false;
 bool open_pid = false;
+bool is_get_yellow = false;
 //bool switched = false;
 
 //////////////////////////////////////////////////////////////////
@@ -67,15 +69,15 @@ char garbage[4];
 int openmv;
 int c = 0;
 float control;
-float n_speed = 1482;//1484
+float n_speed = 1482; //1484
 int new_speed;
 float pre_e = 0;
 int set_d = 75;
 float error;
 float s = 0;
-float kp = 0.16;//0.1
+float kp = 0.16; //0.1
 float ki = 0;
-float kd = 0.4;//0.25
+float kd = 0.4; //0.25
 //float kp1= 0.1;//0.1
 //float ki1 = 0;
 //float kd1 = 0.2;//0.3
@@ -130,7 +132,7 @@ void loop()
   if ((millis() - interval) > 400)
   {
     print_status();
-//    get_color_info();
+    //    get_color_info();
     interval = millis();
   }
 #endif
@@ -190,8 +192,8 @@ void rc_mode(void)
     }
   }
   // 為了Pixy讓出三隻plueIn腳(Uno板)
-  roll_pwm = pulseIn(ch1_pin, HIGH);       //roll
-  pitch_pwm = pulseIn(ch2_pin, HIGH);       //pitch
+  roll_pwm = pulseIn(ch1_pin, HIGH);           //roll
+  pitch_pwm = pulseIn(ch2_pin, HIGH);          //pitch
   throttle_pwm = pulseIn(ch3_pin, HIGH) - 150; //油門
   //  mode_pwm = pulseIn(ch7_pin, HIGH);       //mode
 }
@@ -200,7 +202,7 @@ void mission_mode(void)
 {
   int rel_x, rel_y;
   unsigned long buf;
-  
+
   is_land = false;
   if (is_takeoff == false)
   {
@@ -208,8 +210,8 @@ void mission_mode(void)
     is_takeoff = true;
     // ppm_value = 1455;
     ppm_value = 1475;
-    roll_pwm = roll_center;  //1500,1460
-    pitch_pwm = pitch_center; //1435,1450
+    roll_pwm = roll_center;   //1500,1460
+    pitch_pwm = pitch_forward; //1435,1450
     yaw_pwm = yaw_center;
   }
   else
@@ -218,7 +220,7 @@ void mission_mode(void)
     //    if ((now - start) <= 5000)//5000
     //    {
     //      roll_pwm = roll_center;  //1500,1460
-    //      pitch_pwm = pitch_center; //1435,1450
+    //      pitch_pwm = pitch_forward; //1435,1450
     //      throttle_pwm = 1420;         //1465
     //      yaw_pwm = yaw_center;   //1500
     //    }
@@ -250,10 +252,12 @@ void mission_mode(void)
     //          timer = millis();
     //          ppm_value += 2;
     //        }
-    if (sonar_cm >= 50 && open_pid == false) {
+    if (sonar_cm >= 50 && open_pid == false)
+    {
       open_pid = true;
     }
-    if (open_pid == true) {
+    if (open_pid == true)
+    {
       alt_pid();
       //        //        openmv
       //        if (millis() - before_op <= 1000) {
@@ -261,58 +265,71 @@ void mission_mode(void)
       //        }
       //        else if (millis() - before_op <= 2000) {
       //          yaw_pwm = yaw_center;
-      //          pitch_pwm = pitch_center - 10;
+      //          pitch_pwm = pitch_forward - 10;
       //        }
       //        else {
       //          before_op = millis();
       //        }
-      if (!is_get_red)
+      if (is_get_red)
       {
-        is_get_red, rel_x, rel_y = get_color_info();
-      }
-      else
-      {
-                pitch_pwm = pitch_center;
+        rel_x, rel_y = get_color_info();
         //        if (rel_x > 0) {
-//          if (rel_x < 5) {
-//            roll_pwm = roll_center - 5;
-//          } else if (rel_x < 10) {
-//            roll_pwm = roll_center - 10;
-//          } else if (rel_x < 15) {
-//            roll_pwm = roll_center - 15;
-//          } else {
-//            roll_pwm = roll_center;
-//          }
-//        } else if (rel_x < 0) {
-//          if (rel_x > -5) {
-//            roll_pwm = roll_center + 5;
-//          } else if (rel_x > -10) {
-//            roll_pwm = roll_center + 10;
-//          } else if (rel_x > -15) {
-//            roll_pwm = roll_center + 15;
-//          } else {
-//            roll_pwm = roll_center;
-//          }
-//        }
+        //          if (rel_x < 5) {
+        //            roll_pwm = roll_center - 5;
+        //          } else if (rel_x < 10) {
+        //            roll_pwm = roll_center - 10;
+        //          } else if (rel_x < 15) {
+        //            roll_pwm = roll_center - 15;
+        //          } else {
+        //            roll_pwm = roll_center;
+        //          }
+        //        } else if (rel_x < 0) {
+        //          if (rel_x > -5) {
+        //            roll_pwm = roll_center + 5;
+        //          } else if (rel_x > -10) {
+        //            roll_pwm = roll_center + 10;
+        //          } else if (rel_x > -15) {
+        //            roll_pwm = roll_center + 15;
+        //          } else {
+        //            roll_pwm = roll_center;
+        //          }
+        //        }
 
-        if (rel_y > 0) {
-          if (rel_y < 5) {
+        if (rel_y > 0)
+        {
+          if (rel_y < 5)
+          {
             pitch_pwm = pitch_center - 5;
-          } else if (rel_y < 10) {
+          }
+          else if (rel_y < 10)
+          {
             pitch_pwm = pitch_center - 10;
-          } else if (rel_y < 15) {
+          }
+          else if (rel_y < 15)
+          {
             pitch_pwm = pitch_center - 15;
-          } else {
+          }
+          else
+          {
             pitch_pwm = pitch_center;
           }
-        } else if (rel_y < 0) {
-          if (rel_y > -5) {
+        }
+        else if (rel_y < 0)
+        {
+          if (rel_y > -5)
+          {
             pitch_pwm = pitch_center + 5;
-          } else if (rel_y > -10) {
+          }
+          else if (rel_y > -10)
+          {
             pitch_pwm = pitch_center + 10;
-          } else if (rel_y > -15) {
+          }
+          else if (rel_y > -15)
+          {
             pitch_pwm = pitch_center + 15;
-          } else {
+          }
+          else
+          {
             pitch_pwm = pitch_center;
           }
         }
@@ -360,8 +377,6 @@ void mission_mode(void)
     //          pitch_pwm = pitch_center;
     //        }
     //      }
-
-
   }
 
   //      else {
@@ -385,7 +400,6 @@ void mission_mode(void)
   //          before = millis();
   //        }
   //      }
-
 }
 
 void land_mode(void)
@@ -398,7 +412,7 @@ void land_mode(void)
   {
     before = 0;
     roll_pwm = roll_center;
-    pitch_pwm = pitch_center;
+    pitch_pwm = pitch_forward;
     throttle_pwm = ppm_value; //1480;//1450
     yaw_pwm = yaw_center;
     start = millis();
@@ -482,7 +496,7 @@ int get_color_info(void)
 
     // do this (print) every 50 frames because printing every
     // frame would bog down the Arduino
-    if (frames % 1 == 0)
+    if (frames % 5 == 0)
     {
       //            sprintf(buf, "Detected %d:\n", blocks);
       //      Serial1.print(buf);
@@ -498,26 +512,45 @@ int get_color_info(void)
         {
           c_idx = pixy.blocks[j].signature - 1;
           our_blocks[c_idx] += 1;
+          
           center_x[c_idx] += pixy.blocks[j].x;
           center_y[c_idx] += pixy.blocks[j].y;
         }
       }
+      if (our_blocks[0])
+          {
+            is_get_red = true;
+          }
+          else if (our_blocks[1])
+          {
+            is_get_yellow = true;
+          }
       for (int k = 0; k < colors; k++)
       {
-                if (our_blocks[k]) {
-        center_x[k] = int(center_x[k] / our_blocks[k]) - origin_x;
-        center_y[k] = int(center_y[k] / our_blocks[k]) - origin_y;
+        if (our_blocks[0])
+          {
+            is_get_red = true;
+          }
+          else if (our_blocks[1])
+          {
+            is_get_yellow = true;
+          }
+        if (is_get_red || is_get_yellow)
+        {
+          center_x[k] = int(center_x[k] / our_blocks[k]) - origin_x;
+          center_y[k] = int(center_y[k] / our_blocks[k]) - origin_y;
 #if debug == 'B'
-        Serial1.println(String("") + "Color " + int(k + 1) + " Center:");
-        Serial1.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
-        Serial1.println("");
+          Serial1.println(String("") + "Color " + int(k + 1) + " Center:");
+          Serial1.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
+          Serial1.println("");
 #elif debug == 'P'
-        Serial.println(String("") + "Color " + int(k + 1) + " Center:");
-        Serial.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
-        Serial.println("");
+          Serial.println(String("") + "Color " + int(k + 1) + " Center:");
+          Serial.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
+          Serial.println("");
 #endif
 
-        return center_x[0], center_y[0];
+          return center_x[0], center_y[0];
+        }
       }
     }
   }
@@ -566,13 +599,13 @@ void print_status()
     Serial1.println(cgy);
   }
   Serial1.print("pitch: ");
-  if (pitch_pwm == pitch_center)
+  if (pitch_pwm == pitch_forward)
   {
-    Serial1.println("Center");
+    Serial1.println("Forward>>>>");
   }
   else
   {
-    sprintf(cgy, "%+5d", (pitch_pwm - pitch_center));
+    sprintf(cgy, "%+5d", (pitch_pwm - pitch_forward));
     Serial1.println(cgy);
   }
   Serial1.print("yaw: ");
@@ -626,13 +659,13 @@ void print_status()
     Serial.println(cgy);
   }
   Serial.print("pitch: ");
-  if (pitch_pwm == pitch_center)
+  if (pitch_pwm == pitch_forward)
   {
-    Serial.println("Center");
+    Serial.println("Forward");
   }
   else
   {
-    sprintf(cgy, "%+5d", (pitch_pwm - pitch_center));
+    sprintf(cgy, "%+5d", (pitch_pwm - pitch_forward));
     Serial.println(cgy);
   }
   Serial.print("yaw: ");
