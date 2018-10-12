@@ -86,22 +86,22 @@ while(True):
     # the line farther away from the robot for a better prediction.
     print("Turn Angle: %f" % deflection_angle)
     if (deflection_angle>=10) and (deflection_angle<= 25):#Direction and angle setting
-        yaw=1420
+        yaw=1492
 
     elif  deflection_angle>25:
-        yaw=1350
+        yaw=1489
 
         #uart.write("B")
     elif (deflection_angle <=-10) and  (deflection_angle>=-25):
-        yaw=1540
+        yaw=1496
 
         #uart.write("C")
     elif deflection_angle<-25:
-        yaw=1610
+        yaw=1499
 
         #uart.write("D")
     else:
-        yaw=1480
+        yaw=1494
 
         #uart.write("S")
     uart.write("%d\n" % yaw)

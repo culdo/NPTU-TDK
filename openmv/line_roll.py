@@ -18,16 +18,16 @@ from pyb import UART,delay
 uart = UART(3, 115200)
 uart.init(115200, bits=8, parity=None, stop=1) # init with given parameters
 # Tracks a black line. Use [(128, 255)] for a tracking a white line.
-GRAYSCALE_THRESHOLD = [(0, 90)]
+GRAYSCALE_THRESHOLD = [(0, 60)]
 
 # Each roi is (x, y, w, h). The line detection algorithm will try to find the
 # centroid of the largest blob in each roi. The x position of the centroids
 # will then be averaged with different weights where the most weight is assigned
 # to the roi near the bottom of the image and less to the next roi and so on.
 ROIS = [ # [ROI, weight]three point weight setting
-        (0, 100, 160, 20, 0.5), # You'll need to tweak the weights for your app
-        (0,  50, 160, 20, 0.5), # depending on how your robot is setup.
-        (0,   0, 160, 20, 0.5)
+        (0, 100, 160, 20, 1), # You'll need to tweak the weights for your app
+        (0,  50, 160, 20, 1), # depending on how your robot is setup.
+        (0,   0, 160, 20, 1)
        ]
 
 # Compute the weight divisor (we're computing this so you don't have to make weights add to 1).
@@ -63,49 +63,49 @@ while(True):
 
             centroid_sum += largest_blob.cx() * r[4] # r[4] is the roi weight.
 
-    center_pos = (centroid_sum / weight_sum) # Determine center of line.
+    center_pos = int(centroid_sum / 3) # Determine center of line.
 
     # Convert the center_pos to a deflection angle. We're using a non-linear
     # operation so that the response gets stronger the farther off the line we
     # are. Non-linear operations are good to use on the output of algorithms
     # like this to cause a response "trigger".
-    deflection_angle = 0
+    #deflection_angle = 0
 
     # The 80 is from half the X res, the 60 is from half the Y res. The
     # equation below is just computing the angle of a triangle where the
     # opposite side of the triangle is the deviation of the center position
     # from the center and the adjacent side is half the Y res. This limits
     # the angle output to around -45 to 45. (It's not quite -45 and 45).
-    deflection_angle = -math.atan((center_pos-80)/60)
+    #deflection_angle = -math.atan((center_pos-80)/60)
 
     # Convert angle in radians to degrees.
-    deflection_angle = math.degrees(deflection_angle)
+    #deflection_angle = math.degrees(deflection_angle)
 
     # Now you have an angle telling you how much to turn the robot by which
     # incorporates the part of the line nearest to the robot and parts of
     # the line farther away from the robot for a better prediction.
-    print("Turn Angle: %f" % deflection_angle)
-    if (deflection_angle>=10) and (deflection_angle<= 25):#Direction and angle setting
-        yaw=1420
+    #print("Turn Angle: %f" % deflection_angle)
+    if (center_pos>=30) and (center_pos<= 60):#Direction and angle setting
+        roll=1460
 
-    elif  deflection_angle>25:
-        yaw=1350
+    elif  center_pos<30:
+        roll=1455
 
         #uart.write("B")
-    elif (deflection_angle <=-10) and  (deflection_angle>=-25):
-        yaw=1540
+    elif (center_pos >=100) and  (center_pos<=130):
+        roll=1470
 
         #uart.write("C")
-    elif deflection_angle<-25:
-        yaw=1610
+    elif center_pos>130:
+        roll=1475
 
         #uart.write("D")
     else:
-        yaw=1480
+        roll=1465
 
         #uart.write("S")
-    uart.write("%d\n" % yaw)
-    print("yaw=%d\nangle=%d" % (yaw, deflection_angle))
+    uart.write("%d\n" % roll)
+    print("roll=%d x1=%d" % (roll, center_pos))
     #print(clock.fps()) # Note: Your OpenMV Cam runs about half as fast while
     # connected to your computer. The FPS should increase once disconnected.
     delay(10)

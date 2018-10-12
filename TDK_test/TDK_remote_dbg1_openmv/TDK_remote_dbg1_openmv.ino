@@ -14,9 +14,9 @@
 #define ch4_pin 6
 #define ch7_pin 7
 #define MAX_DISTANCE 200
-#define roll_center 1462  //好螺旋1460,1445
-#define pitch_center 1422 //好螺旋1419
-#define yaw_center 1480//1484
+#define roll_center 1462  //好螺旋1462,1485
+#define pitch_center 1450 //好螺旋1419,1447
+#define yaw_center 1484//1494,1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy.h>
 #define colors 2
@@ -66,10 +66,10 @@ float pre_e = 0;
 int set_d = 75;
 float error;
 float s = 0;
-float kp = 0.15;//0.1
+float kp = 0.16;//0.1
 float ki = 0;
-float kd = 0.3;//0.25
-//float kp1= 0.15;//0.1
+float kd = 0.4;//0.25
+//float kp1= 0.1;//0.1
 //float ki1 = 0;
 //float kd1 = 0.2;//0.3
 //int error_ppm=2555;
@@ -175,7 +175,7 @@ void rc_mode(void)
     if ((pulseIn(ch4_pin, HIGH)) > 1900)
     {
       start = millis();
-      ppm[3] = 1910;
+      ppm[3] = 1950;
     }
     else
     {
@@ -198,14 +198,14 @@ void mission_mode(void)
     start = millis();
     is_takeoff = true;
     // ppm_value = 1455;
-    ppm_value = 1480;
+    ppm_value = 1475;
     ppm[0] = roll_center;  //1500,1460
     ppm[1] = pitch_center; //1435,1450
     ppm[3] = yaw_center;
   }
   else
   {
-        now = millis();
+    now = millis();
     //    if ((now - start) <= 5000)//5000
     //    {
     //      ppm[0] = roll_center;  //1500,1460
@@ -226,6 +226,16 @@ void mission_mode(void)
       }
       before = millis();
     }
+    //openmv-pid============================
+//    if (Serial2.available() > 0) {
+//      if (Serial2.read() == '\n') {
+//        Serial2.readBytes(cmd, 4);
+//        //          Serial.println(cmd);
+//      }
+//      if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
+//        ppm[0] = atoi(cmd);
+//    }
+    //============================
     //        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
     //        {
     //          timer = millis();
@@ -238,16 +248,7 @@ void mission_mode(void)
       alt_pid();
       //        //        openmv
       //        if (millis() - before_op <= 1000) {
-      //openmv-pid============================
-//      if (Serial2.available() > 0) {
-//        if (Serial2.read() == '\n') {
-//          Serial2.readBytes(cmd, 4);
-////          Serial.println(cmd);
-//        }
-//        if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
-//          ppm[3] = atoi(cmd);
-//      }
-      //============================
+
       //        }
       //        else if (millis() - before_op <= 2000) {
       //          ppm[3] = yaw_center;
@@ -634,9 +635,9 @@ void alt_pid(void)
   {
     new_speed = 1487;
   }
-  if (new_speed <= 1480)
+  if (new_speed <= 1478)
   {
-    new_speed = 1480;
+    new_speed = 1478;
   }
   ppm_value = new_speed;
 }
