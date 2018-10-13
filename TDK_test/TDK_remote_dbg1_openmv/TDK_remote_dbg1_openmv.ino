@@ -181,10 +181,10 @@ void rc_mode(void)
   // 解鎖
   if (millis() - start > 1000)
   {
-    if ((pulseIn(ch4_pin, HIGH)) > 1900)
+    if ((pulseIn(ch4_pin, HIGH)) > 1850)
     {
       start = millis();
-      yaw_pwm = 1950;
+      yaw_pwm = 1960;
     }
     else
     {
