@@ -147,8 +147,8 @@ void loop()
     mode_pwm = pulseIn(ch7_pin, HIGH); //飛行模式
     //    mode_pwm = mode_pwm;                 //mode
 
-    //    if (mode_pwm < 1300 && (!is_sonic_fly))
-    if (mode_pwm < 1300) //遙控模式
+    if (mode_pwm < 1300 && (!is_sonic_fly))
+    // if (mode_pwm < 1300) //遙控模式
     {
       if (!is_sonic_fly)
         rc_mode();
@@ -237,21 +237,7 @@ void mission_mode(void)
       }
       before = millis();
     }
-    //openmv-pid============================
-    //    if (Serial2.available() > 0) {
-    //      if (Serial2.read() == '\n') {
-    //        Serial2.readBytes(cmd, 4);
-    //        //          Serial.println(cmd);
-    //      }
-    //      if (atoi(cmd) > 1400 && atoi(cmd) < 1600 )
-    //        roll_pwm = atoi(cmd);
-    //    }
-    //============================
-    //        if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
-    //        {
-    //          timer = millis();
-    //          ppm_value += 2;
-    //        }
+
     if (sonar_cm >= 50 && open_pid == false)
     {
       open_pid = true;
@@ -259,20 +245,10 @@ void mission_mode(void)
     if (open_pid == true)
     {
       alt_pid();
-      //        //        openmv
-      //        if (millis() - before_op <= 1000) {
 
-      //        }
-      //        else if (millis() - before_op <= 2000) {
-      //          yaw_pwm = yaw_center;
-      //          pitch_pwm = pitch_forward - 10;
-      //        }
-      //        else {
-      //          before_op = millis();
-      //        }
+      rel_x, rel_y = get_color_info();
       if (is_get_red)
       {
-        rel_x, rel_y = get_color_info();
         //        if (rel_x > 0) {
         //          if (rel_x < 5) {
         //            roll_pwm = roll_center - 5;
@@ -337,46 +313,6 @@ void mission_mode(void)
     }
     throttle_pwm = ppm_value; //1440
 
-    //      }
-    // if (sonar_cm > 75 || is_high == true)
-    // {
-    //   is_high = true;
-
-    //   if (is_sonic_fly == false)
-    //   {
-    //     if ((sonar_cm > 75) && ((millis() - timer) >= 1000))
-    //     {
-    //       timer = millis();
-    //       ppm_value -= 2;
-    //     }
-    //     else if (sonar_cm <= 75)
-    //     {
-    //       is_sonic_fly = true;
-    //     }
-    //   }
-    // if ((sonar_cm < 75) && ((millis() - timer) >= 1000) && (sonar_cm > 15))
-    // {
-    //   timer = millis();
-    //   ppm_value += 2;
-    // }
-    // else if (sonar_cm >= 75)
-    // {
-    //   is_sonic_fly = true;
-    // }
-    // }
-    //      else
-    //      {
-    //        if (!is_get_red)
-    //        {
-    //          is_get_red = get_color_info();
-    //          //往前ppm = 中心ppm - 差值
-    //          pitch_pwm = pitch_center - 10;
-    //        }
-    //        else
-    //        {
-    //          pitch_pwm = pitch_center;
-    //        }
-    //      }
   }
 
   //      else {
@@ -525,29 +461,23 @@ int get_color_info(void)
           {
             is_get_yellow = true;
           }
+      if (is_get_red || is_get_yellow)
+        {
       for (int k = 0; k < colors; k++)
       {
-        if (our_blocks[0])
-          {
-            is_get_red = true;
-          }
-          else if (our_blocks[1])
-          {
-            is_get_yellow = true;
-          }
-        if (is_get_red || is_get_yellow)
-        {
+        
+        
           center_x[k] = int(center_x[k] / our_blocks[k]) - origin_x;
           center_y[k] = int(center_y[k] / our_blocks[k]) - origin_y;
-#if debug == 'B'
-          Serial1.println(String("") + "Color " + int(k + 1) + " Center:");
-          Serial1.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
-          Serial1.println("");
-#elif debug == 'P'
-          Serial.println(String("") + "Color " + int(k + 1) + " Center:");
-          Serial.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
-          Serial.println("");
-#endif
+// #if debug == 'B'
+//           Serial1.println(String("") + "Color " + int(k + 1) + " Center:");
+//           Serial1.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
+//           Serial1.println("");
+// #elif debug == 'P'
+//           Serial.println(String("") + "Color " + int(k + 1) + " Center:");
+//           Serial.println(String("") + "x: " + center_x[k] + " y: " + center_y[k]);
+//           Serial.println("");
+// #endif
 
           return center_x[0], center_y[0];
         }
@@ -603,9 +533,13 @@ void print_status()
   {
     Serial1.println("Forward>>>>");
   }
-  else
+  else if (pitch_pwm == pitch_center)
   {
-    sprintf(cgy, "%+5d", (pitch_pwm - pitch_forward));
+    Serial1.println("Center");
+  }
+  else 
+  {
+    sprintf(cgy, "%+5d", (pitch_pwm - pitch_center));
     Serial1.println(cgy);
   }
   Serial1.print("yaw: ");
