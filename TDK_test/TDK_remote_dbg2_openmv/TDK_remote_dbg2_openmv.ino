@@ -30,7 +30,7 @@
 #define mode_pwm pwm[4]
 
 //debug選項: false=關閉debug 'P'=電腦PC 'B'=藍芽Bluetooth
-#define debug 'B'
+#define debug 'P'
 
 // 定義連接藍牙模組的序列埠
 //SoftwareSerial 'B'(3, 12); // 接收腳, 傳送腳
@@ -40,7 +40,7 @@ char val; // 儲存接收資料的變數
 
 NewPing sonar(TRIG_PIN, ECHO_PIN, MAX_DISTANCE);
 // This is the main Pixy object
-Pixy pixy;
+
 
 unsigned long now;
 unsigned long start, timer, before, before_op = 0;
@@ -51,7 +51,7 @@ bool is_sonic_fly = false;
 bool is_get_red = false;
 bool is_error = false;
 bool is_high = false;
-bool open_pid = false;
+bool open_pid=false;
 bool is_get_yellow = false;
 //bool switched = false;
 
@@ -61,6 +61,7 @@ bool is_get_yellow = false;
   change theese values in your code (usually servo values move between 1000 and 2000)*/
 int pwm[chanel_number];
 int ppm_value;
+
 int ppm_value1;
 int updated_times = 0;
 int sonar_cm = 0;
@@ -80,7 +81,8 @@ float kp = 0.16; //0.1
 float ki = 0;
 float kd = 0.4; //0.25
 int y;
-int s1;
+int s1=0;
+Pixy pixy;
 //float kp1= 0.1;//0.1
 //float ki1 = 0;
 //float kd1 = 0.2;//0.3
@@ -88,15 +90,16 @@ int s1;
 
 void setup()
 {
+
   //initiallize default ppm values
   // 設為115200平滑接收監控訊息
-  Serial2.begin(115200);
-#if debug == 'B'
-  Serial1.begin(115200);
-#elif debug == 'P'
-  //藍芽鮑率
-  Serial.begin(115200);
-#endif
+//  Serial2.begin(115200);
+//#if debug == 'B'
+//  Serial1.begin(115200);
+//#elif debug == 'P'
+//  //藍芽鮑率
+//  Serial.begin(115200);
+//#endif
 
   for (int i = 0; i < chanel_number; i++)
   {
@@ -131,14 +134,14 @@ void loop()
 {
 
   //每隔0.4秒藍芽發送紀錄
-#if debug != false
-  if ((millis() - interval) > 400)
-  {
-    print_status();
-    //    get_color_info();
-    interval = millis();
-  }
-#endif
+//#if debug != false
+//  if ((millis() - interval) > 400)
+//  {
+//    print_status();
+//    //    get_color_info();
+//    interval = millis();
+//  }
+//#endif
 
   if (throttle_pwm >= 1520 || is_error == true)
   {
@@ -216,6 +219,7 @@ void mission_mode(void)
     roll_pwm = roll_center;   //1500,1460
     pitch_pwm = pitch_forward; //1435,1450
     yaw_pwm = yaw_center;
+   throttle_pwm = ppm_value;
   }
   else
   {
@@ -252,7 +256,16 @@ void mission_mode(void)
 
     }
     throttle_pwm = ppm_value; //1440
-    pitch_pwm=ppm_value1;
+    if (s1==1) {
+    pitch_pwm=1560;
+    //delay(100);
+    }
+    if (s1==0) {
+     pitch_pwm=1450;  
+    }
+//    Serial.println(pitch_pwm);
+//    Serial.println(throttle_pwm);
+//    Serial.println(open_pid);
   }
 
   //      else {
@@ -283,7 +296,7 @@ void land_mode(void)
   is_sonic_fly = false;
   //  is_takeoff = false;
   is_get_red = false;
-  open_pid = false;
+ // open_pid = false;
   if (is_land == false)
   {
     before = 0;
@@ -361,19 +374,18 @@ void get_color_info(void)
   // If there are detect blocks, print them!
   if (blocks)
   {
-     if (blocks==1)
-        {
-          y=pixy.blocks[0].y;   
-        }
-    else if (blocks==2)
-    {
-      y=int((pixy.blocks[0].y+pixy.blocks[1].y)/2);
-    }
+//     if (blocks==1)
+//        {
+//          y=pixy.blocks[0].y;   
+//        }
+//    else if (blocks==2)
+//    {
+//      y=int((pixy.blocks[0].y+pixy.blocks[1].y)/2);
+//    }
 
-        if (y>10) {
-      ppm_value1=1450;
-    //  s=1;
-     }
+//      ppm_value1=1550;
+      s1=1;
+     delay(20);
 //    if (y<89) {
 //      ppm_value1=1440;
 //    //  s=1;
@@ -389,8 +401,9 @@ void get_color_info(void)
      
   }  
   else {
-    ppm_value1=1440;
-  //  s=0;
+//   ppm_value1=1440;
+    s1=0;
+     delay(20);
   }
 }
 
