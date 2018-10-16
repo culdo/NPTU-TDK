@@ -14,10 +14,11 @@
 #define ch4_pin 6
 #define ch7_pin 7
 #define MAX_DISTANCE 200
-#define roll_center 1462  //好螺旋1462,1485
+#define roll_center 1445  //好螺旋1462,1485
 #define pitch_forward 1440 //好螺旋1419,1447
+#define pitch_back 1470
 #define pitch_center 1447
-#define yaw_center 1484   //1494,1484
+#define yaw_center 1488   //1494,1484
 //#include <SoftwareSerial.h>   // 引用程式庫
 #include <Pixy2.h>
 #define colors 2
@@ -82,6 +83,8 @@ float ki = 0;
 float kd = 0.4; //0.25
 int y;
 int s1=0;
+int s2=0;
+int s3=0;
 Pixy2 pixy;
 //float kp1= 0.1;//0.1
 //float ki1 = 0;
@@ -94,12 +97,12 @@ void setup()
   //initiallize default ppm values
   // 設為115200平滑接收監控訊息
 //  Serial2.begin(115200);
-//#if debug == 'B'
-//  Serial1.begin(115200);
-//#elif debug == 'P'
-//  //藍芽鮑率
-//  Serial.begin(115200);
-//#endif
+#if debug == 'B'
+  Serial1.begin(115200);
+#elif debug == 'P'
+  //藍芽鮑率
+  Serial.begin(115200);
+#endif
 pinMode(buzzerPin, OUTPUT);
   for (int i = 0; i < chanel_number; i++)
   {
@@ -134,14 +137,14 @@ void loop()
 {
 
   //每隔0.4秒藍芽發送紀錄
-//#if debug != false
-//  if ((millis() - interval) > 400)
-//  {
-//    print_status();
-//    //    get_color_info();
-//    interval = millis();
-//  }
-//#endif
+#if debug != false
+  if ((millis() - interval) > 400)
+  {
+    print_status();
+    //    get_color_info();
+    interval = millis();
+  }
+#endif
 
   if (throttle_pwm >= 1520 || is_error == true)
   {
@@ -200,7 +203,7 @@ void rc_mode(void)
   // 為了Pixy讓出三隻plueIn腳(Uno板)
   roll_pwm = pulseIn(ch1_pin, HIGH);           //roll
   pitch_pwm = pulseIn(ch2_pin, HIGH);          //pitch
-  throttle_pwm = pulseIn(ch3_pin, HIGH) - 150; //油門
+  throttle_pwm = pulseIn(ch3_pin, HIGH); //油門
   //  mode_pwm = pulseIn(ch7_pin, HIGH);       //mode
 }
 
@@ -249,21 +252,38 @@ void mission_mode(void)
     {
       open_pid = true;
     }
-    if (open_pid == true)
+    if (open_pid == true  && s3==0)
     {
       alt_pid();
       get_color_info();
 
     }
+    if (s3==1)  {
+      alt_pid();
+      pitch_pwm=pitch_forward;
+    }
     throttle_pwm = ppm_value; //1440
-    if (s1==1) {
-    pitch_pwm=1520;
+    if (s1==1 && s2==0 && s3==0) {
+    pitch_pwm=pitch_back;
     digitalWrite(buzzerPin, HIGH);
+    s2=1;
     //delay(100);
     }
-    if (s1==0) {
-     pitch_pwm=1450; 
+    if (s1==1 && s2==1 && s3==0) {
+    pitch_pwm=pitch_back;
+    digitalWrite(buzzerPin, HIGH);
+    s2=1;
+    //delay(100);
+    }
+    if (s1==0 && s2==0 && s3==0) {
+     pitch_pwm=pitch_forward; 
      digitalWrite(buzzerPin, LOW); 
+     s2=0;
+    }
+    if (s1==0 && s2==1 && s3==0) {
+     pitch_pwm=pitch_forward; 
+     digitalWrite(buzzerPin, LOW); 
+     s2=0;
     }
 //    Serial.println(pitch_pwm);
 //    Serial.println(throttle_pwm);
@@ -386,8 +406,12 @@ void get_color_info(void)
 //    }
 
 //      ppm_value1=1550;
+    if (pixy.ccc.blocks[0].m_signature==1)  {
       s1=1;
-   
+    }
+    if (pixy.ccc.blocks[0].m_signature==2)  {
+      s3=1;
+    }
 //    if (y<89) {
 //      ppm_value1=1440;
 //    //  s=1;
