@@ -15,7 +15,7 @@
 #define ch7_pin 7
 #define MAX_DISTANCE 200
 #define roll_center 1445  //好螺旋1462,1485
-#define pitch_forward 1440 //好螺旋1419,1447
+#define pitch_forward 1445 //好螺旋1419,1447
 #define pitch_back 1470
 #define pitch_center 1447
 #define yaw_center 1488   //1494,1484
@@ -97,12 +97,12 @@ void setup()
   //initiallize default ppm values
   // 設為115200平滑接收監控訊息
 //  Serial2.begin(115200);
-#if debug == 'B'
-  Serial1.begin(115200);
-#elif debug == 'P'
-  //藍芽鮑率
-  Serial.begin(115200);
-#endif
+//#if debug == 'B'
+//  Serial1.begin(115200);
+//#elif debug == 'P'
+//  //藍芽鮑率
+//  Serial.begin(115200);
+//#endif
 pinMode(buzzerPin, OUTPUT);
   for (int i = 0; i < chanel_number; i++)
   {
@@ -137,14 +137,14 @@ void loop()
 {
 
   //每隔0.4秒藍芽發送紀錄
-#if debug != false
-  if ((millis() - interval) > 400)
-  {
-    print_status();
-    //    get_color_info();
-    interval = millis();
-  }
-#endif
+//#if debug != false
+//  if ((millis() - interval) > 400)
+//  {
+//    print_status();
+//    //    get_color_info();
+//    interval = millis();
+//  }
+//#endif
 
   if (throttle_pwm >= 1520 || is_error == true)
   {
@@ -252,11 +252,11 @@ void mission_mode(void)
     {
       open_pid = true;
     }
-    if (open_pid == true  && s3==0)
+    if (open_pid == true && s3==0)
     {
       alt_pid();
       get_color_info();
-
+      
     }
     if (s3==1)  {
       alt_pid();
